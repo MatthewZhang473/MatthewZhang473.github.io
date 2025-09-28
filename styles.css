@@ -29,13 +29,46 @@ body {
 
 /* Header */
 .header {
-    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    position: relative;
     color: white;
     padding: 60px 40px 40px;
     text-align: center;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.hero-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.hero-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(44, 62, 80, 0.8) 0%, rgba(52, 152, 219, 0.7) 100%);
+    z-index: 2;
 }
 
 .profile-section {
+    position: relative;
+    z-index: 3;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -48,19 +81,22 @@ body {
     font-weight: 600;
     margin-bottom: 10px;
     letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .profile-info .title {
     font-size: 1.3em;
     font-weight: 300;
     margin-bottom: 5px;
-    opacity: 0.9;
+    opacity: 0.95;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .profile-info .affiliation {
     font-size: 1.1em;
     font-weight: 300;
-    opacity: 0.8;
+    opacity: 0.9;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Navigation */
@@ -298,10 +334,19 @@ body {
     
     .header {
         padding: 40px 20px 30px;
+        min-height: 300px;
     }
     
     .profile-info h1.name {
         font-size: 2.2em;
+    }
+    
+    .profile-info .title {
+        font-size: 1.1em;
+    }
+    
+    .profile-info .affiliation {
+        font-size: 1em;
     }
     
     .navigation ul {
@@ -338,8 +383,21 @@ body {
 }
 
 @media (max-width: 480px) {
+    .header {
+        min-height: 250px;
+        padding: 30px 15px 25px;
+    }
+    
     .profile-info h1.name {
         font-size: 1.8em;
+    }
+    
+    .profile-info .title {
+        font-size: 1em;
+    }
+    
+    .profile-info .affiliation {
+        font-size: 0.9em;
     }
     
     .section {
@@ -353,6 +411,16 @@ body {
 
 /* Print Styles */
 @media print {
+    .hero-image {
+        display: none;
+    }
+    
+    .header {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        min-height: auto;
+        padding: 40px 20px;
+    }
+    
     .navigation {
         display: none;
     }
