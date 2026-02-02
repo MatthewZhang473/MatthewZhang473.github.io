@@ -434,3 +434,52 @@ body {
         break-inside: avoid;
     }
 }
+
+/* Open Source Contributions Section */
+.open-source-content .contribution-item {
+    margin-bottom: 35px;
+    padding: 25px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #3498db;
+    border-radius: 0 5px 5px 0;
+}
+
+.open-source-content .contribution-item h3 {
+    font-family: 'Crimson Text', serif;
+    font-size: 1.4em;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.open-source-content .contribution-item .authors {
+    font-style: italic;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.open-source-content .contribution-item .description {
+    color: #777;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.open-source-content .contribution-links {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.open-source-content .contribution-links .pub-link {
+    background-color: #e74c3c;
+    color: white;
+    padding: 6px 12px;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.open-source-content .contribution-links .pub-link:hover {
+    background-color: #c0392b;
+}
