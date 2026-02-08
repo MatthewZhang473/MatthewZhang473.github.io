@@ -66,6 +66,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Toggle navigation menu on mobile
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+
+    navToggle.addEventListener('click', function () {
+        navMenu.classList.toggle('show');
+    });
 });
 
 // Function to create a new news item (for easy content management)
