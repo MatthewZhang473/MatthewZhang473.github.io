@@ -5,6 +5,8 @@ function loadBlogPost(url, skipHashUpdate = false) {
     const blogList = document.querySelector('.blog-preview-list');
     const blogContent = document.getElementById('blog-post-content');
     const viewer = document.getElementById('markdown-viewer');
+    const sidebar = document.querySelector('.sidebar');
+    const wrapper = document.querySelector('.wrapper');
 
     if (!blogList || !blogContent || !viewer) return;
 
@@ -37,6 +39,10 @@ function loadBlogPost(url, skipHashUpdate = false) {
             blogList.style.display = 'none';
             blogContent.style.display = 'block';
             
+            // Hide sidebar and expand wrapper
+            if (sidebar) sidebar.style.display = 'none';
+            if (wrapper) wrapper.style.maxWidth = '900px';
+
             if (!skipHashUpdate) {
                 window.location.hash = url;
             }
@@ -54,9 +60,17 @@ function loadBlogPost(url, skipHashUpdate = false) {
 function showBlogList() {
     const blogList = document.querySelector('.blog-preview-list');
     const blogContent = document.getElementById('blog-post-content');
+    const sidebar = document.querySelector('.sidebar');
+    const wrapper = document.querySelector('.wrapper');
+
     if (blogList && blogContent) {
         blogList.style.display = 'block';
         blogContent.style.display = 'none';
+        
+        // Restore sidebar and wrapper
+        if (sidebar) sidebar.style.display = 'flex';
+        if (wrapper) wrapper.style.maxWidth = '1100px';
+
         window.location.hash = '';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -66,5 +80,15 @@ window.addEventListener('load', () => {
     if (window.location.hash && window.location.hash.startsWith('#blog/')) {
         const postUrl = window.location.hash.substring(1);
         loadBlogPost(postUrl, true);
+    }
+});
+
+// Handle browser back/forward buttons
+window.addEventListener('hashchange', () => {
+    if (window.location.hash && window.location.hash.startsWith('#blog/')) {
+        const postUrl = window.location.hash.substring(1);
+        loadBlogPost(postUrl, true);
+    } else if (window.location.hash === '') {
+        showBlogList();
     }
 });
