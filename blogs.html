@@ -59,19 +59,25 @@
                     <div class="blog-preview-list">
                         <h2>Blogs</h2>
                         <div class="blog-preview-item">
-                            <h3><a href="#" onclick="loadBlogPost('blog/sample-post-1.md'); return false;">Blog Post 1: Graph Random Features (GRFs)</a></h3>
+                            <h3><a href="#" onclick="loadBlogPost('blog/grf_gp.md'); return false;">Blog Post 1: Graph Random Features (GRFs)</a></h3>
                             <p class="date">March 4, 2026</p>
-                            <p class="excerpt">Introducing Graph Random Features (GRFs) and how they enable more efficient probabilistic inference, such as Gaussian Processes...</p>
+                            <p class="excerpt">Introducing Graph Random Features (GRFs) and how they make GPs scale on graphs.</p>
                         </div>
                         <div class="blog-preview-item">
-                            <h3><a href="#" onclick="loadBlogPost('blog/sample-post-2.md'); return false;">Blog Post 2: Linear Attention, an Overview</a></h3>
+                            <h3><a href="#" onclick="loadBlogPost('blog/linear_attention.md'); return false;">Blog Post 2: Linear Attention, an Overview</a></h3>
                             <p class="date">March 5, 2026</p>
-                            <p class="excerpt">An overview of Linear Attention mechanisms and their importance in modern transformer architectures...</p>
+                            <p class="excerpt">An overview of linear attention & Mamba models. Presented at Myrtle.AI.</p>
                         </div>
                     </div>
 
                     <div id="blog-post-content" style="display:none;">
-                        <button onclick="showBlogList()" class="back-button">← Back to Blogs</button>
+                        <div class="blog-header-actions">
+                            <button onclick="showBlogList()" class="back-button">← Back to Blogs</button>
+                            <div class="language-toggle">
+                                <button id="lang-en" class="lang-btn active" onclick="changeLanguage('en')">EN</button>
+                                <button id="lang-cn" class="lang-btn" onclick="changeLanguage('cn')">简</button>
+                            </div>
+                        </div>
                         <!-- 'markdown-body' is the standard class for GitHub CSS -->
                         <article id="markdown-viewer" class="markdown-body"></article>
                     </div>
@@ -81,9 +87,8 @@
     </div>
 
     <footer class="footer">
-        <p>&copy; 2026 Matthew Zhang &bull; Built with simple HTML/CSS/JS</p>
+        <p>&copy; 2026 Matthew Zhang &bull; Made with the help of Gemini :D</p>
     </footer>
-
     <script src="script.js"></script>
 </body>
 </html>

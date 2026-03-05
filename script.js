@@ -1,6 +1,8 @@
 // Academic Sidebar Theme JavaScript
 
 // 1. Blog Functionality
+let currentPostUrl = '';
+
 function loadBlogPost(url, skipHashUpdate = false) {
     const blogList = document.querySelector('.blog-preview-list');
     const blogContent = document.getElementById('blog-post-content');
@@ -9,6 +11,22 @@ function loadBlogPost(url, skipHashUpdate = false) {
     const wrapper = document.querySelector('.wrapper');
 
     if (!blogList || !blogContent || !viewer) return;
+
+    currentPostUrl = url;
+    const isCN = url.endsWith('_cn.md');
+    
+    // Update language buttons UI
+    const enBtn = document.getElementById('lang-en');
+    const cnBtn = document.getElementById('lang-cn');
+    if (enBtn && cnBtn) {
+        if (isCN) {
+            cnBtn.classList.add('active');
+            enBtn.classList.remove('active');
+        } else {
+            enBtn.classList.add('active');
+            cnBtn.classList.remove('active');
+        }
+    }
 
     // Add a cache-busting timestamp to ensure we get the latest content
     const fetchUrl = `${url}?t=${new Date().getTime()}`;
@@ -57,6 +75,21 @@ function loadBlogPost(url, skipHashUpdate = false) {
         });
 }
 
+function changeLanguage(lang) {
+    if (!currentPostUrl) return;
+
+    let newUrl;
+    if (lang === 'cn') {
+        if (currentPostUrl.endsWith('_cn.md')) return;
+        newUrl = currentPostUrl.replace('.md', '_cn.md');
+    } else {
+        if (!currentPostUrl.endsWith('_cn.md')) return;
+        newUrl = currentPostUrl.replace('_cn.md', '.md');
+    }
+
+    loadBlogPost(newUrl);
+}
+
 function showBlogList() {
     const blogList = document.querySelector('.blog-preview-list');
     const blogContent = document.getElementById('blog-post-content');
@@ -71,6 +104,7 @@ function showBlogList() {
         if (sidebar) sidebar.style.display = 'flex';
         if (wrapper) wrapper.style.maxWidth = '1100px';
 
+        currentPostUrl = '';
         window.location.hash = '';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
