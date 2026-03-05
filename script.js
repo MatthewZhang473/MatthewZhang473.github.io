@@ -1,137 +1,70 @@
-// Academic Homepage JavaScript
+// Academic Sidebar Theme JavaScript
 
-// Update last modified date
-document.addEventListener('DOMContentLoaded', function() {
-    const lastUpdatedElement = document.getElementById('last-updated');
-    if (lastUpdatedElement) {
-        const currentDate = new Date();
-        const options = { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        lastUpdatedElement.textContent = currentDate.toLocaleDateString('en-US', options);
-    }
-    
-    // Smooth scrolling for navigation links
-    const navLinks = document.querySelectorAll('.navigation a[href^="#"]');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetSection = document.querySelector(targetId);
+// 1. Blog Functionality
+function loadBlogPost(url, skipHashUpdate = false) {
+    const blogList = document.querySelector('.blog-preview-list');
+    const blogContent = document.getElementById('blog-post-content');
+    const viewer = document.getElementById('markdown-viewer');
+
+    if (!blogList || !blogContent || !viewer) return;
+
+    // Add a cache-busting timestamp to ensure we get the latest content
+    const fetchUrl = `${url}?t=${new Date().getTime()}`;
+
+    fetch(fetchUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load post');
+            return response.text();
+        })
+        .then(markdown => {
+            // Render Markdown
+            viewer.innerHTML = marked.parse(markdown);
             
-            if (targetSection) {
-                targetSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
+            // 2. Render LaTeX using KaTeX (after markdown is parsed)
+            if (window.renderMathInElement) {
+                renderMathInElement(viewer, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError: false
                 });
             }
-        });
-    });
-    
-    // Highlight active navigation link based on scroll position
-    function updateActiveNavLink() {
-        const sections = document.querySelectorAll('.section');
-        const navLinks = document.querySelectorAll('.navigation a');
-        
-        let currentSection = '';
-        
-        sections.forEach(section => {
-            const rect = section.getBoundingClientRect();
-            if (rect.top <= 100) {
-                currentSection = section.getAttribute('id');
+
+            // Switch views
+            blogList.style.display = 'none';
+            blogContent.style.display = 'block';
+            
+            if (!skipHashUpdate) {
+                window.location.hash = url;
             }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        })
+        .catch(err => {
+            console.error(err);
+            viewer.innerHTML = '<p style="color:red;">Error loading blog post. Please try again later.</p>';
+            blogList.style.display = 'none';
+            blogContent.style.display = 'block';
         });
-        
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === '#' + currentSection) {
-                link.classList.add('active');
-            }
-        });
+}
+
+function showBlogList() {
+    const blogList = document.querySelector('.blog-preview-list');
+    const blogContent = document.getElementById('blog-post-content');
+    if (blogList && blogContent) {
+        blogList.style.display = 'block';
+        blogContent.style.display = 'none';
+        window.location.hash = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
-    // Update active nav link on scroll
-    window.addEventListener('scroll', updateActiveNavLink);
-    
-    // Check for missing files and show helpful messages
-    const resumeLinks = document.querySelectorAll('.download-link');
-    resumeLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href.includes('files/') && (href.includes('resume.pdf') || href.includes('cv.pdf'))) {
-                // This is a placeholder link - could add more sophisticated checking
-                console.log('Resume/CV link clicked:', href);
-            }
-        });
-    });
+}
 
-    // Toggle navigation menu on mobile
-    const navToggle = document.querySelector('.nav-toggle');
-    const navMenu = document.querySelector('.nav-menu');
-
-    navToggle.addEventListener('click', function () {
-        navMenu.classList.toggle('show');
-    });
+window.addEventListener('load', () => {
+    if (window.location.hash && window.location.hash.startsWith('#blog/')) {
+        const postUrl = window.location.hash.substring(1);
+        loadBlogPost(postUrl, true);
+    }
 });
-
-// Function to create a new news item (for easy content management)
-function addNewsItem(date, content) {
-    const newsContent = document.querySelector('.news-content');
-    const noteElement = newsContent.querySelector('.note');
-    
-    const newsItem = document.createElement('div');
-    newsItem.className = 'news-item';
-    newsItem.innerHTML = `
-        <span class="date">${date}</span>
-        <p>${content}</p>
-    `;
-    
-    // Insert before the note
-    newsContent.insertBefore(newsItem, noteElement);
-}
-
-// Function to add a new publication (for easy content management)
-function addPublication(title, authors, venue, links = {}) {
-    const publicationsContent = document.querySelector('.publications-content');
-    const noteElement = publicationsContent.querySelector('.note');
-    
-    const publicationItem = document.createElement('div');
-    publicationItem.className = 'publication-item';
-    
-    let linksHtml = '';
-    for (const [linkText, linkUrl] of Object.entries(links)) {
-        linksHtml += `<a href="${linkUrl}" class="pub-link">${linkText}</a>`;
-    }
-    
-    publicationItem.innerHTML = `
-        <h3>${title}</h3>
-        <p class="authors">${authors}</p>
-        <p class="venue">${venue}</p>
-        <div class="publication-links">
-            ${linksHtml}
-        </div>
-    `;
-    
-    // Insert before the note
-    publicationsContent.insertBefore(publicationItem, noteElement);
-}
-
-// Example usage (uncomment and modify as needed):
-/*
-// Add a new news item
-addNewsItem('April 2024', 'New paper submitted to Conference XYZ!');
-
-// Add a new publication
-addPublication(
-    'My Research Paper Title',
-    '<strong>Matthew Zhang</strong>, Co-Author Name',
-    'Conference Name 2024',
-    {
-        'Paper': 'https://example.com/paper.pdf',
-        'Code': 'https://github.com/username/repo',
-        'Dataset': 'https://example.com/dataset'
-    }
-);
-*/

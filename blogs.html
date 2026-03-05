@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs - Matthew Zhang</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Standard Library 1: GitHub Markdown CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    
+    <!-- Standard Library 2: KaTeX for LaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <div class="profile-photo-container">
+                    <img src="files/FullSizeRender.jpeg" alt="Matthew Zhang" class="profile-photo">
+                </div>
+                <h1 class="name">Matthew Zhang</h1>
+                <p class="title">Machine Learning Researcher</p>
+                <p class="affiliation">CBL, University of Cambridge</p>
+                
+                <nav class="side-nav">
+                    <ul>
+                        <li><a href="index.html">About</a></li>
+                        <li><a href="publications.html">Publications</a></li>
+                        <li><a href="opensource.html">Open Source</a></li>
+                        <li><a href="blogs.html" class="active">Blogs</a></li>
+                    </ul>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="social-icons">
+                        <a href="https://scholar.google.com/citations?user=HGTCp7sAAAAJ&hl=en" target="_blank" title="Google Scholar">🎓</a>
+                        <a href="https://github.com/MatthewZhang473" target="_blank" title="GitHub">💻</a>
+                        <a href="https://www.linkedin.com/in/matthew-zhang-cambridge/" target="_blank" title="LinkedIn">🔗</a>
+                        <a href="mailto:matthew.zhang473@gmail.com" title="Email">✉️</a>
+                    </div>
+                    <a href="files/MATTHEWZHANG_CV_ML_0202.pdf" class="cv-button" target="_blank">Download CV</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <section class="section">
+                <div id="blog-posts-container">
+                    <div class="blog-preview-list">
+                        <h2>Blogs</h2>
+                        <div class="blog-preview-item">
+                            <h3><a href="#" onclick="loadBlogPost('blog/sample-post-1.md'); return false;">Blog Post 1: Graph Random Features (GRFs)</a></h3>
+                            <p class="date">March 4, 2026</p>
+                            <p class="excerpt">Introducing Graph Random Features (GRFs) and how they enable more efficient probabilistic inference, such as Gaussian Processes...</p>
+                        </div>
+                        <div class="blog-preview-item">
+                            <h3><a href="#" onclick="loadBlogPost('blog/sample-post-2.md'); return false;">Blog Post 2: Linear Attention, an Overview</a></h3>
+                            <p class="date">March 5, 2026</p>
+                            <p class="excerpt">An overview of Linear Attention mechanisms and their importance in modern transformer architectures...</p>
+                        </div>
+                    </div>
+
+                    <div id="blog-post-content" style="display:none;">
+                        <button onclick="showBlogList()" class="back-button">← Back to Blogs</button>
+                        <!-- 'markdown-body' is the standard class for GitHub CSS -->
+                        <article id="markdown-viewer" class="markdown-body"></article>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2026 Matthew Zhang &bull; Built with simple HTML/CSS/JS</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

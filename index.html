@@ -3,164 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matthew Zhang - Academic Homepage</title>
+    <title>About - Matthew Zhang</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <header class="header">
-            <div class="hero-image">
-                <img src="files/FullSizeRender.jpeg" alt="Matthew Zhang" class="hero-photo">
-                <div class="hero-overlay"></div>
-            </div>
-            <div class="profile-section">
-                <div class="profile-info">
-                    <h1 class="name">Matthew Zhang</h1>
-                    <p class="title">Machine Learning Research Assistant</p>
-                    <p class="affiliation">Computational and Biological Learning Lab, University of Cambridge</p>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <div class="profile-photo-container">
+                    <img src="files/FullSizeRender.jpeg" alt="Matthew Zhang" class="profile-photo">
+                </div>
+                <h1 class="name">Matthew Zhang</h1>
+                <p class="title">Machine Learning Researcher</p>
+                <p class="affiliation">CBL, University of Cambridge</p>
+                
+                <nav class="side-nav">
+                    <ul>
+                        <li><a href="index.html" class="active">About</a></li>
+                        <li><a href="publications.html">Publications</a></li>
+                        <li><a href="opensource.html">Open Source</a></li>
+                        <li><a href="blogs.html">Blogs</a></li>
+                    </ul>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="social-icons">
+                        <a href="https://scholar.google.com/citations?user=HGTCp7sAAAAJ&hl=en" target="_blank" title="Google Scholar">🎓</a>
+                        <a href="https://github.com/MatthewZhang473" target="_blank" title="GitHub">💻</a>
+                        <a href="https://www.linkedin.com/in/matthew-zhang-cambridge/" target="_blank" title="LinkedIn">🔗</a>
+                        <a href="mailto:matthew.zhang473@gmail.com" title="Email">✉️</a>
+                    </div>
+                    <a href="files/MATTHEWZHANG_CV_ML_0202.pdf" class="cv-button" target="_blank">Download CV</a>
                 </div>
             </div>
-        </header>
-
-        <!-- Navigation -->
-        <nav class="navigation">
-            <button class="nav-toggle" aria-label="Toggle navigation">
-                ☰
-            </button>
-            <ul class="nav-menu">
-                <li><a href="#about">About</a></li>
-                <li><a href="#resume">Resume</a></li>
-                <li><a href="#publications">Publications</a></li>
-                <li><a href="#open-source">Open Source</a></li>
-                <li><a href="#news">News</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
+        </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- About Section -->
-            <section id="about" class="section">
+            <section class="section">
                 <h2>About</h2>
                 <div class="about-content">
                     <p>
-                        Hey there, welcome to my academic homepage. I am a machine learning researcher @<a href="https://cbl.eng.cam.ac.uk/" target="_blank">CBL Cambridge</a>. My research interests include Bayesian machine learning, Gaussian processes, graph machine learning, and Monte-Carlo methods.
-                        This page serves as a hub for my academic work, publications, and professional updates.
+                        I am a machine learning researcher at the <a href="https://cbl.eng.cam.ac.uk/" target="_blank">Computational and Biological Learning Lab (CBL)</a>, University of Cambridge. My research interests include Bayesian machine learning, Gaussian processes, graph machine learning, and Monte-Carlo methods.
                     </p>
                     <p>
-                        My research focuses on developing scalable bayesian inference methods and applying them to real-world graphs with over 1M nodes. I am passionate about interdisciplinary collaboration and am always interested in new research opportunities.
+                        My work focuses on developing scalable Bayesian inference methods and applying them to real-world graphs. I recently graduated with a BA + MEng degree (First Class Honours) from Cambridge University and have experience working at Myrtle.AI, Microsoft, and Huawei.
                     </p>
                 </div>
-            </section>
 
-            <!-- Resume Section -->
-            <section id="resume" class="section">
-                <h2>Resume/CV</h2>
-                <div class="resume-content">
-                    <p>Download my current resume/CV:</p>
-                    <div class="resume-links">
-                        <a href="files/MATTHEWZHANG_CV_ML_0202.pdf" class="download-link" target="_blank">
-                            📄 Resume (PDF)
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Publications Section -->
-            <section id="publications" class="section">
-                <h2>Publications</h2>
-                <div class="publications-content">
-                    
-                    <div class="publication-item">
-                        <h3>Graph Random Features for Scalable Gaussian Processes</h3>
-                        <p class="authors"><strong>Matthew Zhang</strong>, Jihao Andreas Lin, Krzysztof Choromanski, Adrian Weller, Richard E. Turner, Isaac Reid </p>
-                        <p class="venue">Accepted at ICLR 2026</p>
-                        <div class="publication-links">
-                            <a href="https://arxiv.org/pdf/2509.03691" class="pub-link">Paper</a>
-                            <a href="https://github.com/MatthewZhang473/Efficient-Gaussian-Process-on-Graphs" class="pub-link">Code</a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Open Source Contributions Section -->
-            <section id="open-source" class="section">
-                <h2>Open Source Contributions</h2>
-                <div class="open-source-content">
-                    <div class="contribution-item">
-                        <h3>Fast Graph GP</h3>
-                        <p class="description">
-                            A Python package for performing fast Gaussian Process (GP) inference on graphs. 
-                        </p>
-                        <div class="contribution-links">
-                            <a href="https://github.com/MatthewZhang473/Fast-Graph-GP" class="pub-link" target="_blank">GitHub</a>
-                            <a href="https://pypi.org/project/fast-graph-gp/" class="pub-link" target="_blank">PyPI</a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- News Section -->
-            <section id="news" class="section">
-                <h2>News & Updates</h2>
-                <div class="news-content">
-                    
+                <h3>News</h3>
+                <div class="news-list">
                     <div class="news-item">
-                        <span class="date">January 2026</span>
-                        <p>Paper <em>'Graph Random Features for Scalable Gaussian Processes'</em> accepted at <a href="https://iclr.cc/" target="_blank">ICLR 2026</a>.</p>
+                        <span class="date">Jan 2026</span>
+                        <p>Paper 'Graph Random Features for Scalable Gaussian Processes' accepted at ICLR 2026.</p>
                     </div>
-
-                     <div class="news-item">
-                        <span class="date">November 2025</span>
-                        <p>Joined <a href="https://www.myrtle.ai/" target="_blank">Myrtle.AI</a> as a Machine Learning Engineer.</p>
-                    </div>
-
                     <div class="news-item">
-                        <span class="date">July 2025</span>
-                        <p>Research assistant @ CBL Cambridge, co-supervised by Professor Rich Turner, Professor Adrian Weller and Isaac Reid.</p>
+                        <span class="date">Nov 2025</span>
+                        <p>Joined Myrtle.AI as a Machine Learning Engineer.</p>
                     </div>
-
                     <div class="news-item">
-                        <span class="date">July 2025</span>
-                        <p>Graduated with a BA + MEng degree, first class honours from Cambridge University.</p>
+                        <span class="date">Jul 2025</span>
+                        <p>Research assistant @ CBL Cambridge.</p>
                     </div>
-                    
                     <div class="news-item">
-                        <span class="date">July 2024</span>
+                        <span class="date">Jul 2025</span>
+                        <p>Graduated with a BA + MEng degree (First Class Honours) from Cambridge University.</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="date">Jul 2024</span>
                         <p>Software engineering internship @ Microsoft.</p>
                     </div>
-
                     <div class="news-item">
-                        <span class="date">June 2022</span>
+                        <span class="date">Jun 2022</span>
                         <p>Software engineering internship @ Huawei UK R&D Centre.</p>
                     </div>
                 </div>
             </section>
-
-            <!-- Contact Section -->
-            <section id="contact" class="section">
-                <h2>Contact</h2>
-                <div class="contact-content">
-                    <div class="contact-info">
-                        <p><strong>Email:</strong> <a href="mailto:matthew.zhang473@gmail.com">matthew.zhang473@gmail.com</a></p>
-                        <div class="social-links">
-                            <a href="https://scholar.google.com/citations?user=HGTCp7sAAAAJ&hl=en" target="_blank">Google Scholar</a>
-                            <a href="https://www.linkedin.com/in/matthew-zhang-cambridge/" target="_blank">LinkedIn</a>
-                            <a href="https://github.com/MatthewZhang473" target="_blank">GitHub</a>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>&copy; 2025 Matthew Zhang. All rights reserved.</p>
-            <p>Last updated: <span id="last-updated">September 2025</span></p>
-        </footer>
     </div>
+
+    <footer class="footer">
+        <p>&copy; 2026 Matthew Zhang &bull; Built with simple HTML/CSS/JS</p>
+    </footer>
 
     <script src="script.js"></script>
 </body>
