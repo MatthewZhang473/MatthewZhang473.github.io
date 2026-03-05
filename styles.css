@@ -75,6 +75,13 @@ body {
     letter-spacing: -0.02em;
 }
 
+.chinese-name {
+    font-weight: 400;
+    font-size: 0.9em;
+    margin-left: 5px;
+    color: #666;
+}
+
 .sidebar .title {
     text-align: center;
     font-weight: 500;
