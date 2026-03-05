@@ -4,9 +4,9 @@
     --primary-color: #2c3e50;
     --accent-color: #3498db;
     --text-color: #333;
-    --bg-color: #f4f7f6;
+    --bg-color: #ffffff;
     --sidebar-bg: #ffffff;
-    --border-color: #eee;
+    --border-color: #eaeaea;
     --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -26,17 +26,17 @@ body {
 /* Layout Wrapper */
 .wrapper {
     display: flex;
-    max-width: 1200px;
+    max-width: 1100px;
     margin: 0 auto;
     min-height: 100vh;
 }
 
 /* Sidebar Styling */
 .sidebar {
-    width: 300px;
+    width: 280px;
     background-color: var(--sidebar-bg);
-    border-right: 1px solid var(--border-color);
-    padding: 40px 30px;
+    border-right: none;
+    padding: 60px 30px;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -49,114 +49,109 @@ body {
 }
 
 .profile-photo-container {
-    width: 150px;
-    height: 150px;
-    margin: 0 auto 20px;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 25px;
     border-radius: 50%;
     overflow: hidden;
-    border: 3px solid var(--accent-color);
+    border: 1px solid var(--border-color);
+    background-color: white;
+    padding: 5px;
 }
 
 .profile-photo {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
 }
 
 .sidebar h1.name {
-    font-size: 1.8em;
+    font-size: 1.6em;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     color: var(--primary-color);
     letter-spacing: -0.02em;
 }
 
 .sidebar .title {
     text-align: center;
-    font-weight: 400;
-    font-size: 0.95em;
-    color: #666;
-    margin-bottom: 5px;
+    font-weight: 500;
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 4px;
 }
 
 .sidebar .affiliation {
     text-align: center;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: 400;
     color: #888;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
 }
 
 /* Side Nav */
 .side-nav ul {
     list-style: none;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 .side-nav li {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .side-nav a {
     text-decoration: none;
-    color: var(--text-color);
+    color: #666;
     font-weight: 500;
     display: block;
-    padding: 8px 15px;
-    border-radius: 5px;
-    transition: all 0.3s;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.95em;
 }
 
-.side-nav a:hover, .side-nav a.active {
-    background-color: var(--accent-color);
-    color: white;
+.side-nav a:hover {
+    color: var(--accent-color);
+    background-color: #f0f0f0;
+}
+
+.side-nav a.active {
+    color: var(--primary-color);
+    font-weight: 700;
+    background-color: transparent;
 }
 
 /* Sidebar Footer */
 .sidebar-footer {
     margin-top: auto;
     text-align: center;
-    padding-top: 20px;
+    padding-top: 30px;
 }
 
 .social-icons {
-    font-size: 1.5em;
-    margin-bottom: 15px;
+    font-size: 1.2em;
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 18px;
+    margin-bottom: 5px;
 }
 
 .social-icons a {
+    color: #888;
     text-decoration: none;
-    transition: transform 0.2s;
+    transition: color 0.2s ease;
 }
 
 .social-icons a:hover {
-    transform: scale(1.2);
-}
-
-.cv-button {
-    display: block;
-    background-color: var(--primary-color);
-    color: white;
-    text-decoration: none;
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 0.9em;
-    font-weight: 600;
-    transition: background-color 0.3s;
-}
-
-.cv-button:hover {
-    background-color: var(--accent-color);
+    color: var(--accent-color);
 }
 
 /* Main Content Styling */
 .main-content {
     flex: 1;
-    padding: 60px 50px;
+    padding: 80px 60px;
     background-color: white;
 }
 
