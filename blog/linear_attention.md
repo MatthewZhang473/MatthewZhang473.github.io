@@ -1,6 +1,11 @@
 # Linear Attention: A Simple Introduction
 
-I recently read the Mamba2 paper and is facinated by the idea of state-space duality: how linear attentions relates to a state-space model like Mamba. I recently gave a presentation at [Myrtle.ai](https://myrtle.ai) about this topic, and this post summarizes the evolution of Linear Attention and its fascinating relationship with State-Space Models (SSMs).
+I’ve recently been spending some time exploring the world of Linear Attention, and found it truely facinating. If you’ve been following the latest efficiency literature, you’ve likely seen models like Mamba and Gated DeltaNet shaking up the Transformer-dominant status quo.
+
+In this series of posts, I’ll break down how these pieces fit together, the elegant math that makes linear scaling possible, and some of the breakthrough research pushing this field forward.
+
+This post is adapted from a recent technical presentation I gave at [Myrtle.ai](https://myrtle.ai) on Linear Attention and State-Space Models (SSMs).
+
 
 <a href="files/slides/linear_attention_1.pdf" target="_blank" class="resource-card">
     <div class="resource-icon"><i class="fas fa-file-pdf"></i></div>
@@ -10,14 +15,22 @@ I recently read the Mamba2 paper and is facinated by the idea of state-space dua
     </div>
 </a>
 
-## Why we're stuck at $O(T^2)$
+## Recap: Softmax Attention
 
-Standard Softmax Attention has a massive scaling problem:
+We all love Softmax Attention, but it has the notorious $\mathcal{O}(T^2)$ scaling problem. Let's figure out why this is the case from the first principles:
 
-$$V^{\prime} = \text{softmax} \left( \frac{QK^T}{\sqrt{D}} \right) V$$
 
-**Reminder: Matrix Multiplication Complexity**
-For $A \in \mathbb{R}^{M \times N}$ and $B \in \mathbb{R}^{N \times P}$, the complexity is **$O(M \cdot N \cdot P)$**.
+$$V^{\prime} = \text{softmax} \left( \frac{QK^T}{\sqrt{D}} \right) V \tag{1}$$
+
+Here $Q, K, V \in \mathbb{R}^{T \times D}$, where $T$ is the time dimension (sequence length), and $D$ represents the size of the hidden states.
+
+
+> **Reminder: Matrix Multiplication Complexity**
+> For $A \in \mathbb{R}^{M \times N}$ and $B \in \mathbb{R}^{N \times P}$, the time complexity to compute $A B$ is **$O(M \cdot N \cdot P)$**.
+
+By tracking the shape changes during the computation, the quadratic complexity becomes clear:
+
+<div align="center">
 
 | Operation | Shape Change | Complexity |
 | :--- | :--- | :--- |
@@ -25,32 +38,63 @@ For $A \in \mathbb{R}^{M \times N}$ and $B \in \mathbb{R}^{N \times P}$, the com
 | $\text{softmax}(\cdot)$ | $(T, T) \to (T, T)$ | $O(T^2)$ |
 | $(\cdot)V$ | $(T, T) \times (T, D) \to (T, D)$ | **$O(T^2 D)$** |
 
-This $T^2$ scaling makes long-context processing extremely expensive. Furthermore, Softmax is **non-associative**, meaning we cannot swap the order of matrix multiplication: $\text{softmax}(QK^T)V \neq Q(K^T V)$.
+</div>
+
+This $T^2$ scaling makes long-context processing extremely expensive. Furthermore, Softmax is **non-associative**, meaning we cannot swap the order of matrix multiplication: $$\text{softmax}(QK^T)V \neq Q(K^T V) \tag{2}$$.
 
 ## What if? Restoring Associativity
 
 **The hypothesis:** If we can decompose $\text{softmax}(QK^T)$ into $\Phi(Q)\Phi(K)^T$, for $\Phi(Q) \in \mathbb{R}^{T \times D^{\prime}}$, we can leverage the **associative property** of matrix multiplication.
 
-$$V^{\prime} = \underbrace{\Phi(Q)}\_{\in \mathbb{R}^{T \times D^{\prime}}} \left( \underbrace{\Phi(K)^T}\_{\in \mathbb{R}^{D^{\prime} \times T}} \underbrace{V}\_{\in \mathbb{R}^{T \times D}} \right)$$
+$$V^{\prime} = \underbrace{\Phi(Q)}\_{\in \mathbb{R}^{T \times D^{\prime}}} \left( \underbrace{\Phi(K)^T}\_{\in \mathbb{R}^{D^{\prime} \times T}} \underbrace{V}\_{\in \mathbb{R}^{T \times D}} \right) \tag{3}$$
 
-Check out the new training complexity:
+Similarly, let's check out new training complexity by inspecting the shape changes:
+
+<div align="center">
 
 | Operation | Shape Change | Complexity |
 | :--- | :--- | :--- |
 | $\Phi(K)^T V$ | $(D', T) \times (T, D) \to (D', D)$ | $O(T D D')$ |
 | $\Phi(Q) (\cdot)$ | $(T, D') \times (D', D) \to (T, D)$ | $O(T D D')$ |
 
+</div>
+
+
+Hooray, it's linear! But you might ask, how can we find the $\Phi(\cdot)$?
+
+
 ## Let's Derive Linear Attention
 
-Consider the $i$-th query and unpack the softmax:
+To see how we get to the linear version, let's look at the calculation for the $i$-th row of the output matrix $V'$. Since the $i$-th row of the Softmax only depends on the $i$-th query $Q\_i$, we can write:
 
-$$V\_i^{\prime} = \frac{\sum\_{j=1}^T \operatorname{sim}(Q\_i, K\_j) V\_j}{\sum\_{j=1}^T \operatorname{sim}(Q\_i, K\_j)}$$
+$$V'\_i = \text{softmax} \left( \frac{Q\_i K^\top}{\sqrt{D}} \right) V \tag{4}$$
 
-If we find a feature map $\phi(\cdot)$ such that $\operatorname{sim}(Q\_i, K\_j) = \phi(Q\_i) \phi(K\_j)^\top$:
+> **Softmax Reminder**: For a row vector $\mathbf{x} \in \mathbb{R}^{1 \times T}$, the $j$-th element is $\text{softmax}(\mathbf{x})\_j = \frac{\exp(x\_j)}{\sum\_k \exp(x\_k)}$. 
 
-$$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top V\_j \right)}{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top \right)}$$
+Expanding Equation (4), we can visualize the $i$-th row $V'\_i$ as the product of a row vector of softmax weights and a "column" of row vectors $\{V\_1, \dots, V\_T\}$:
+
+$$V'\_i = \begin{bmatrix} \text{softmax}(\frac{Q\_i K^\top}{\sqrt{D}})\_1 & \dots & \text{softmax}(\frac{Q\_i K^\top}{\sqrt{D}})\_T \end{bmatrix} \begin{bmatrix} V\_1 \\ \vdots \\ V\_T \end{bmatrix} \tag{5}$$
+
+By substituting the full definition of the softmax into each term, we get:
+
+$$V'\_i = \footnotesize \begin{bmatrix} \frac{\exp(Q\_i K\_1^\top / \sqrt{D})}{\sum\_k \exp(Q\_i K\_k^\top / \sqrt{D})} & \dots & \frac{\exp(Q\_i K\_T^\top / \sqrt{D})}{\sum\_k \exp(Q\_i K\_k^\top / \sqrt{D})} \end{bmatrix} \begin{bmatrix} V\_1 \\ \vdots \\ V\_T \end{bmatrix} \tag{6}$$
+
+Calculating this dot product results in the classic <span style="color: #e67e22;">weighted sum</span> of all rows $V\_j$:
+
+$$V\_i^{\prime} = \sum\_{j=1}^T \frac{\exp(Q\_i K\_j^\top / \sqrt{D})}{\sum\_{k=1}^T \exp(Q\_i K\_k^\top / \sqrt{D})} V\_j \tag{7}$$
+
+
+We can make this more general by defining a similarity function (also known as *"kernel"* ) $\operatorname{sim}(Q\_i, K\_j) = \exp(Q\_i K\_j^\top / \sqrt{D})$. If we pull the denominator out of the sum, we get:
+
+$$V\_i^{\prime} = \frac{\sum\_{j=1}^T \operatorname{sim}(Q\_i, K\_j) V\_j}{\sum\_{k=1}^T \operatorname{sim}(Q\_i, K\_k)} \tag{8}$$
+
+This is the standard form. Now, the magic happens when we find a feature map $\phi(\cdot)$ such that $\operatorname{sim}(Q\_i, K\_j) = \phi(Q\_i) \phi(K\_j)^\top$:
+
+$$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top V\_j \right)}{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top \right)} \tag{9}$$
 
 ### Training Complexity: Detailed Breakdown
+
+<div align="center">
 
 | Operation | Shape Change | Complexity |
 | :--- | :--- | :--- |
@@ -63,13 +107,24 @@ $$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top V\_j \right)}{
 | **Normalization** | | |
 | Row-wise Division | $(T, D) \text{ by } (T, 1)$ | $O(T D)$ |
 
+</div>
+
+
+
 ## Deriving the Feature Map $\phi(x)$
 
 ### 1st Order Approximation
-$\exp(Q\_i K\_j^\top) \approx 1 + Q\_i K\_j^\top$. Defining $\phi(x) = \begin{bmatrix} 1 & x \end{bmatrix}$ recovers this.
+Consider the first-order Taylor expansion of the exponential:
+$$\exp(Q\_i K\_j^\top) \approx 1 + Q\_i K\_j^\top \tag{10}$$
+
+Defining $\phi(x) = \begin{bmatrix} 1 & x \end{bmatrix}$ recovers this, since:
+$$\phi(Q\_i)\phi(K\_j)^\top = \begin{bmatrix} 1 & Q\_i \end{bmatrix} \begin{bmatrix} 1 \\ K\_j^\top \end{bmatrix} = 1 + Q\_i K\_j^\top \tag{11}$$
 
 ### Full Exponential Kernel
-$$\exp(Q\_i K\_j^\top) = \sum\_{n=0}^{\infty} \frac{(Q\_i K\_j^\top)^n}{n!} \implies \phi(x) = \left[ 1, x, \frac{x^{\otimes 2}}{\sqrt{2!}}, \dots, \frac{x^{\otimes n}}{\sqrt{n!}}, \dots \right]$$
+$$\exp(Q\_i K\_j^\top) = \sum\_{n=0}^{\infty} \frac{(Q\_i K\_j^\top)^n}{n!} \tag{12}$$
+
+Which implies an infinite feature map:
+$$\phi(x) = \left[ 1, x, \frac{x^{\otimes 2}}{\sqrt{2!}}, \dots, \frac{x^{\otimes n}}{\sqrt{n!}}, \dots \right] \tag{13}$$
 
 ### What $\phi(\cdot)$ is used in literature?
 Any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ works if it satisfies $\phi(x) \geq 0$ (element-wise) for numerical stability.
@@ -80,15 +135,20 @@ Any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ works if it satisfies $
 | **Performer** | Random Fourier Features | Softmax Approx. |
 | **Mamba-2 (SSD)** | Implicit (State Expansion) | - |
 
+
+
+
+
 ## Make Inference Like an RNN
 
 Causal linear attention layers can be viewed as RNNs where $S\_i$ and $Z\_i$ act as internal hidden states (memory).
 
 **State Updates:**
-$$s\_i = s\_{i-1} + \phi(x\_i W\_K) (x\_i W\_V)^T, \quad z\_i = z\_{i-1} + \phi(x\_i W\_K)$$
+$$s\_i = s\_{i-1} + \phi(x\_i W\_K) (x\_i W\_V)^T \tag{14}$$
+$$z\_i = z\_{i-1} + \phi(x\_i W\_K) \tag{15}$$
 
 **Output Prediction:**
-$$y\_i = f\_l \left( \frac{\phi(x\_i W\_Q)^T s\_i}{\phi(x\_i W\_Q)^T z\_i} + x\_i \right)$$
+$$y\_i = f\_l \left( \frac{\phi(x\_i W\_Q)^T s\_i}{\phi(x\_i W\_Q)^T z\_i} + x\_i \right) \tag{16}$$
 
 ### Complexity Summary
 *   **Training complexity:** $O(T)$
