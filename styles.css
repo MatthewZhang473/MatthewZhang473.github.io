@@ -357,6 +357,77 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
+/* Resource Card for Blog Posts */
+.resource-card {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--accent-color);
+    padding: 20px;
+    margin: 25px 0;
+    border-radius: 4px;
+    gap: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    text-decoration: none !important;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.resource-card:hover {
+    background-color: #edf2f7;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.resource-icon {
+    font-size: 2.2em;
+    color: var(--accent-color);
+    min-width: 50px;
+    text-align: center;
+}
+
+.resource-info {
+    flex: 1;
+}
+
+.resource-title {
+    margin: 0 0 5px 0 !important;
+    font-size: 1.1em !important;
+    font-weight: 600 !important;
+    color: var(--primary-color);
+}
+
+.resource-description {
+    margin: 0 !important;
+    font-size: 0.9em;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Add a chevron icon on the right */
+.resource-card::after {
+    content: "\f054"; /* FontAwesome chevron-right */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: #cbd5e0;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+}
+
+.resource-card:hover::after {
+    color: var(--accent-color);
+    transform: translateX(5px);
+}
+
+@media (max-width: 600px) {
+    .resource-card {
+        padding: 20px 15px;
+    }
+    .resource-card::after {
+        display: none;
+    }
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .wrapper {
