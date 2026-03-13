@@ -53,6 +53,21 @@ function loadBlogPost(url, skipHashUpdate = false) {
                 });
             }
 
+            // 3. Render Mermaid Diagrams
+            const mermaidBlocks = viewer.querySelectorAll('code.language-mermaid');
+            mermaidBlocks.forEach(block => {
+                const pre = block.parentElement;
+                const div = document.createElement('div');
+                div.className = 'mermaid';
+                div.textContent = block.textContent;
+                pre.replaceWith(div);
+            });
+            if (window.mermaid) {
+                mermaid.run({
+                    nodes: viewer.querySelectorAll('.mermaid')
+                });
+            }
+
             // Switch views
             blogList.style.display = 'none';
             blogContent.style.display = 'block';

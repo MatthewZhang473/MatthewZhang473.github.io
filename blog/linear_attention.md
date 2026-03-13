@@ -242,30 +242,60 @@ The Recurrent Update ($\mathcal{O}(1)$ per step)
 This provides the best of both worlds: the <span style="color: #e67e22;">parallelizable training of Transformers</span> and the <span style="color: #e67e22;">constant-memory inference of RNNs</span>.
 
 
-## The Evolution of Linear Models
+## The Evolution of Linear Attention Models:
+
+The landscape of efficient sequence modeling has shifted from trying to "fix" Softmax to reimagining the entire mechanism. The (highly simplified) diagram below traces the lineage of these methods—from the early $\mathcal{O}(T^2)$ Transformers to the modern "State-Space Duality" (SSD) era.
+
+Note the convergence: what began as two separate disciplines—Linear Attention (scaling the kernel) and State-Space Models (scaling the recurrence)—eventually unified in Mamba-2. This theoretical bridge proved that these two approaches are mathematically two sides of the same coin.
+
+In the upcoming posts, we will dive into more interesting linear architectures in detail.
 
 ```mermaid
 graph TD
-    A[Transformer 2017<br/>O T^2 Softmax Attention] --> B1[Linear Transformer 2020]
-    A --> B2[S4 2021]
-    B1 --> C1[RetNet 2023]
-    B2 --> C2[Mamba 2023]
-    C1 --> D[Mamba-2 / SSD 2024]
-    C2 --> D
-    D --> E1[DeltaNet 2024]
-    D --> E2[Samba 2024]
-    style D fill:#f9f,stroke:#333,stroke-width:4px
+    Trans["<b>Transformer (2017)</b><br/>O(T²) Softmax Attention"]
+
+    %% Linear Branch
+    LinAttn["<b>Linear Transformer (2020)</b><br/>Kernels φ(Q)φ(K)ᵀ"]
+    RetNet["<b>RetNet (2023)</b><br/>Multi-scale Retention"]
+
+    %% SSM Branch
+    S4["<b>S4 (2021)</b><br/>Structured State Space"]
+    Mamba["<b>Mamba (2023)</b><br/>Selective Scan O(T)"]
+
+    %% Convergence
+    Mamba2["<b>Mamba-2 / SSD (2024)</b><br/>Theoretical Convergence<br/>SSM ≡ Gated Linear Attention"]
+
+    %% Post-Convergence
+    DeltaNet["<b>DeltaNet (2024)</b><br/>Delta Rule: State Overwriting"]
+    Samba["<b>Samba (2024)</b><br/>Hybrid SSM-Attention"]
+
+    %% Connections
+    Trans --> LinAttn
+    Trans --> S4
+    LinAttn --> RetNet
+    S4 --> Mamba
+    RetNet --> Mamba2
+    Mamba --> Mamba2
+    Mamba2 --> DeltaNet
+    Mamba2 --> Samba
+
+    %% Styling with uniform width
+    style Trans fill:#f5f5f5,stroke:#666,stroke-width:2px,width:280px
+    style LinAttn fill:#e1f5fe,stroke:#01579b,stroke-width:2px,width:280px
+    style RetNet fill:#e1f5fe,stroke:#01579b,stroke-width:2px,width:280px
+    style S4 fill:#fff3e0,stroke:#e65100,stroke-width:2px,width:280px
+    style Mamba fill:#fff3e0,stroke:#e65100,stroke-width:2px,width:280px
+    style Mamba2 fill:#f3e5f5,stroke:#4a148c,stroke-width:4px,width:300px
+    style DeltaNet fill:#e0f2f1,stroke:#004d40,stroke-width:2px,width:280px
+    style Samba fill:#e0f2f1,stroke:#004d40,stroke-width:2px,width:280px
 ```
 
-## Wrapping Up
+## Wrapping Up & Coding Time!
 
 Linear Attention isn't just a "faster version" of attention; it’s a fundamental shift toward maintaining a compressed, evolving state.
 
-**What we didn't cover today:**
-* Hardware (GPU) efficient algorithms (e.g., block-matrix decomposition).
-* Specific model architectures.
 
-**Next Up: State Space Models (Mamba)**
-![Mamba Architecture](images/Mamba.png)
+Check out the code: Here you can train your linear attention models (Mamba2 / gated deltanet) from scratch, as well as some classical transformer models (llama) on the Tiny stories dataset to get a feeling of them.
 
-Check out the code: 👉 [linear-attention-demo](https://github.com/MatthewZhang473/linear-attention-demo)
+
+[linear-attention-demo](https://github.com/MatthewZhang473/linear-attention-demo)
