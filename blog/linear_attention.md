@@ -188,23 +188,49 @@ The following are common feature maps used in well-known models, they perform al
 
 
 
-## Make Inference Like an RNN
+## Beyond Training: The Recurrent View (Inference)
 
-Causal linear attention layers can be viewed as RNNs where $s\_i$ and $z\_i$ act as internal hidden states (memory).
+While the parallel form is great for training, the real power of Linear Attention lies in its **recurrent interpretation** for inference. In autoregressive models, a token at position $i$ can only attend to previous tokens $j \leq i$.
 
-**State Updates:**
-$$s\_i = s\_{i-1} + \phi(x\_i W\_K)^\top (x\_i W\_V) \tag{15}$$
-$$z\_i = z\_{i-1} + \phi(x\_i W\_K)^\top \tag{16}$$
+### Causal Masking
 
-**Output Prediction:**
-$$y\_i = f\_l \left( \frac{\phi(x\_i W\_Q) s\_i}{\phi(x\_i W\_Q) z\_i} + x\_i \right) \tag{17}$$
+To implement this constraint in the linear framework, we modify Equation 10 to only include tokens up to the current position $i$. The only change is the upper bound of the summation: instead of summing over the entire sequence ($j = 1 \dots T$), we now only sum up to the current step ($j = 1 \dots i$).
 
-### Complexity Summary
+$$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^i \phi(K\_j)^\top V\_j \right)}{\phi(Q\_i) \left( \sum\_{j=1}^i \phi(K\_j)^\top \right)} \tag{15}$$
+
+By defining the cumulative states $S\_i$ and $Z\_i$ as our "memory":
+
+$$S\_i = \sum\_{j=1}^i \phi(K\_j)^\top V\_j, \quad Z\_i = \sum\_{j=1}^i \phi(K\_j)^\top \tag{16}$$
+
+The output at step $i$ becomes:
+
+$$V'\_i = \frac{\phi(Q\_i) S\_i}{\phi(Q\_i) Z\_i} \tag{17}$$
+
+### The RNN Formulation
+
+Notice that $S\_i$ and $Z\_i$ can be updated incrementally from the previous step in $\mathcal{O}(1)$ time relative to the sequence length. This transforms the attention mechanism into a linear RNN:
+
+**Step 1: Update State (Memory)**
+$$s\_i = s\_{i-1} + \phi(k\_i)^\top v\_i \tag{18}$$
+$$z\_i = z\_{i-1} + \phi(k\_i)^\top \tag{19}$$
+
+**Step 2: Generate Output**
+$$y\_i = f\_l \left( \frac{\phi(q\_i) s\_i}{\phi(q\_i) z\_i} \right) + x\_i \tag{20}$$
+
+Where:
+*   **$s\_i$**: The attention memory (storing feature-value interactions).
+*   **$z\_i$**: The normalizer memory (tracking cumulative feature magnitudes).
+*   **$f\_l$**: The output projection (e.g., Feed-Forward or Norm).
+*   **$x\_i$**: The residual connection.
+
+This explains why modern models like Mamba are often viewed as "Linear RNNs"—they maintain a fixed-size state that summarizes the entire past, rather than re-scanning an ever-growing KV cache.
+
+## Summary
 *   **Training complexity:** $O(T \cdot D \cdot D')$
 *   **Inference complexity:** $O(D \cdot D')$ (constant per step relative to $T$)
-    1. Update KV State: $s_{new} = s_{old} + \phi(k_{new})^\top v_{new}$ ($O(D \cdot D')$)
-    2. Update Normalizer: $z_{new} = z_{old} + \phi(k_{new})^\top$ ($O(D')$)
-    3. Compute Output: $y_{new} = f\_l \left( \frac{\phi(q_{new}) s_{new}}{\phi(q_{new}) z_{new}} + x_{new} \right)$ ($O(D \cdot D')$)
+    1. Update KV State: $s_{new} = s_{old} + \phi(k_{new})^\top v_{new}$ 
+    2. Update Normalizer: $z_{new} = z_{old} + \phi(k_{new})^\top$
+    3. Compute Output: $y_{new} = f\_l \left( \frac{\phi(q_{new}) s_{new}}{\phi(q_{new}) z_{new}} + x_{new} \right)$
 
 ## The Evolution of Linear Models
 
