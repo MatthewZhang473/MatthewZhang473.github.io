@@ -1,8 +1,8 @@
 # Understand Linear Attention from Scratch (Part I)
 
-I’ve recently been spending some time exploring the world of Linear Attention, and found it truely facinating. If you’ve been following the latest efficiency literature, you’ve likely seen models like "Mamba" and "Gated DeltaNet" shaking up the Transformer-dominant status quo.
+I’ve recently been spending some time exploring the world of Linear Attention, and found it truly fascinating. If you’ve been following the latest efficiency literature, you’ve likely seen models like "Mamba" and "Gated DeltaNet" shaking up the Transformer-dominant status quo.
 
-In this series of posts, My goal is to move past the high-level buzzwords and re-derive the mechanics from first principles. I’ve intentionally focused on the math here—I find that walking through the derivation step-by-step is a great way to understand how we can transform a quadratic bottleneck into a linear solution. I hope you find the deep dive just as rewarding as I did.
+In this series of posts, my goal is to move past the high-level buzzwords and re-derive the mechanics from first principles. I’ve intentionally focused on the math here—I find that walking through the derivation step-by-step is a great way to understand how we can transform a quadratic bottleneck into a linear solution. I hope you find the deep dive just as rewarding as I did.
 
 This post is adapted from a recent technical presentation I gave at [Myrtle.ai](https://myrtle.ai) on Linear Attention and State-Space Models (SSMs).
 
@@ -40,7 +40,7 @@ By tracking the shape changes during the computation, the quadratic complexity b
 
 </div>
 
-This $T^2$ scaling makes long-context processing extremely expensive. Furthermore, Softmax is **non-associative**, meaning we cannot swap the order of matrix multiplication: $$\text{softmax}(QK^T)V \neq Q(K^T V) \tag{2}$$.
+This $T^2$ scaling makes long-context processing extremely expensive. Furthermore, Softmax is **non-associative**, meaning we cannot swap the order of matrix multiplication: $$\text{softmax}(QK^T)V \neq Q(K^T V) \tag{2}$$
 
 ## What if? Restoring Associativity
 
@@ -70,7 +70,7 @@ Let's walk through the derivation and see if we can make it all click.
 
 ## Let's Derive Linear Attention from First Principles
 
-To see how softmax is decomposed in the linear version paradigm, let's begin by looking at the $i$-th row of the Softmax in Equation 1, which only depends on the $i$-th query $Q\_i$:
+To see how softmax is decomposed in the linear version paradigm, let's begin by looking at the $i$-th row of the Softmax in Equation (1), which only depends on the $i$-th query $Q\_i$:
 
 $$V'\_i = \text{softmax} \left( \frac{Q\_i K^\top}{\sqrt{D}} \right) V \tag{4}$$
 
@@ -172,7 +172,7 @@ This shows that finding a tractable decomposition for the exact exponential kern
 In practice, any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ defines a valid kernel if $\phi(x) \geq 0$ (element-wise) for numerical stability. I personally see it as a trade-off: we sacrifice some properties of the exponential kernel for much better computational guarantees.
 
 
-The following are common feature maps used in well-known models, they perform almost as good compared to standard softmax attention:
+The following are common feature maps used in well-known models; they perform almost as well as standard softmax attention:
 
 
 <div align="center">
@@ -194,7 +194,7 @@ While the parallel form is great for training, the real power of Linear Attentio
 
 ### Causal Masking
 
-To implement this constraint in the linear framework, we modify Equation 10 to only include tokens up to the current position $i$. The only change is the upper bound of the summation: instead of summing over the entire sequence ($j = 1 \dots T$), we now only sum up to the current step ($j = 1 \dots i$).
+To implement this constraint in the linear framework, we modify Equation (10) to only include tokens up to the current position $i$. The only change is the upper bound of the summation: instead of summing over the entire sequence ($j = 1 \dots T$), we now only sum up to the current step ($j = 1 \dots i$).
 
 $$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^i \phi(K\_j)^\top V\_j \right)}{\phi(Q\_i) \left( \sum\_{j=1}^i \phi(K\_j)^\top \right)} \tag{15}$$
 
@@ -290,12 +290,13 @@ graph TD
     style Samba fill:#e0f2f1,stroke:#004d40,stroke-width:2px,width:280px
 ```
 
-## Wrapping Up & Coding Time!
+## Wrapping Up
 
-Linear Attention isn't just a "faster version" of attention; it’s a fundamental shift toward maintaining a compressed, evolving state.
+Linear Attention represents more than just a "faster" Transformer; it is a fundamental shift toward maintaining a compressed, evolving state. By trading the exact Softmax kernel for a decomposable feature map, we gain the ability to process long contexts with constant memory.
 
+This post laid the mathematical foundation, but the story doesn't end here. In the next part of this series, we will dive into <span style="color: #e67e22;">State-Space Models (SSMs)</span> and explore how Mamba leverages hardware-aware algorithms to turn this theoretical efficiency into real-world performance.
 
-Check out the code: Here you can train your linear attention models (Mamba2 / gated deltanet) from scratch, as well as some classical transformer models (llama) on the Tiny stories dataset to get a feeling of them.
+### Ready to see it in action?
+If you find that code makes the math "click," check out the demo repository. I’ve implemented these models using Flash-Linear-Attention library so you can compare architectures like *Mamba-2* and *Gated DeltaNet* against a standard Llama-style Transformer using the TinyStories dataset.
 
-
-[linear-attention-demo](https://github.com/MatthewZhang473/linear-attention-demo)
+👉 [**linear-attention-demo**](https://github.com/MatthewZhang473/linear-attention-demo)
