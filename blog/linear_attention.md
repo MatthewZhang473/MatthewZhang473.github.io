@@ -112,7 +112,7 @@ $$V' = \frac{\Phi(Q) \left( \Phi(K)^\top V \right)}{\Phi(Q) \left( \Phi(K)^\top 
 
 > Note: The division is performed row-wise, broadcasting the denominator.
 
-
+<span style="color: #e67e22;">Crucially, this parallel form in Equation 10 (and its gradients) can be computed across the entire sequence at once, providing the same high-throughput training as a standard Transformer.</span>
 
 
 ### Training Complexity: Detailed Breakdown
@@ -136,7 +136,7 @@ Finally, we can eyeball the time complexities by tracing all the operations in E
 </div>
 
 
-$\mathcal{O}(T)$ complexity, just as expected!
+$\mathcal{O}(T)$ complexity, just as expected! 
 
 
 ## Deriving the Feature Map $\phi(\cdot)$
@@ -226,11 +226,21 @@ Where:
 This explains why modern models like Mamba are often viewed as "Linear RNNs"—they maintain a fixed-size state that summarizes the entire past, rather than re-scanning an ever-growing KV cache.
 
 ## Summary
-*   **Training complexity:** $O(T \cdot D \cdot D')$
-*   **Inference complexity:** $O(D \cdot D')$ (constant per step relative to $T$)
-    1. Update KV State: $s_{new} = s_{old} + \phi(k_{new})^\top v_{new}$ 
-    2. Update Normalizer: $z_{new} = z_{old} + \phi(k_{new})^\top$
-    3. Compute Output: $y_{new} = f\_l \left( \frac{\phi(q_{new}) s_{new}}{\phi(q_{new}) z_{new}} + x_{new} \right)$
+
+Linear Attention shifts the paradigm from a global memory bottleneck to a streamlined, recurrent process. By replacing the Softmax kernel with a decomposable feature map, we achieve:
+
+ - Linear Training Complexity: Scaling becomes $\mathcal{O}(T)$ instead of quadratic. Doubling the sequence length only doubles the compute, rather than quadrupling it.
+
+- Constant-Time Inference: During generation, the model behaves as a Linear RNN with a fixed-size state, eliminating the need for an ever-growing KV cache.
+
+
+The Recurrent Update ($\mathcal{O}(1)$ per step)
+1. Update State: $s_i = s_{i-1} + \phi(k_i)^\top v_i$
+2. Update Normalizer: $z_i = z_{i-1} + \phi(k_i)^\top$
+3. Generate Output: $y_i = f_l \left( \frac{\phi(q_i) s_i}{\phi(q_i) z_i} \right) + x_i$
+
+This provides the best of both worlds: the <span style="color: #e67e22;">parallelizable training of Transformers</span> and the <span style="color: #e67e22;">constant-memory inference of RNNs</span>.
+
 
 ## The Evolution of Linear Models
 
