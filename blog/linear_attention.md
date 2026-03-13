@@ -1,8 +1,8 @@
-# Linear Attention: A Simple Introduction
+# Understand Linear Attention from Scratch (Part I)
 
-I’ve recently been spending some time exploring the world of Linear Attention, and found it truely facinating. If you’ve been following the latest efficiency literature, you’ve likely seen models like Mamba and Gated DeltaNet shaking up the Transformer-dominant status quo.
+I’ve recently been spending some time exploring the world of Linear Attention, and found it truely facinating. If you’ve been following the latest efficiency literature, you’ve likely seen models like "Mamba" and "Gated DeltaNet" shaking up the Transformer-dominant status quo.
 
-In this series of posts, I’ll break down how these pieces fit together, the elegant math that makes linear scaling possible, and some of the breakthrough research pushing this field forward.
+In this series of posts, My goal is to move past the high-level buzzwords and re-derive the mechanics from first principles. I’ve intentionally focused on the math here—I find that walking through the derivation step-by-step is a great way to understand how we can transform a quadratic bottleneck into a linear solution. I hope you find the deep dive just as rewarding as I did.
 
 This post is adapted from a recent technical presentation I gave at [Myrtle.ai](https://myrtle.ai) on Linear Attention and State-Space Models (SSMs).
 
@@ -141,39 +141,41 @@ $\mathcal{O}(T)$ complexity, just as expected!
 
 ## Deriving the Feature Map $\phi(\cdot)$
 
-Now that we know the $\mathcal{O}(T)$ complexity, let's try to answer the second question: can we find a $\phi(\cdot)$ so that 
-$\operatorname{sim}(Q\_i, K\_j) = \phi(Q\_i) \phi(K\_j)^\top$
+Now that we’ve established the $\mathcal{O}(T)$ complexity, let’s tackle our second question: can we find a $\phi(\cdot)$ such that $\operatorname{sim}(Q_i, K_j) = \phi(Q_i) \phi(K_j)^\top$?
 
-Let's begin with the exponential kernel $\operatorname{sim}(Q\_i, K\_j) = \exp(Q\_i K\_j^\top)$ used in softmax attention. (I dropped the $\sqrt{D}$ for simplicity).
+Let's start with the exponential kernel $\operatorname{sim}(Q_i, K_j) = \exp(Q_i K_j^\top)$ used in softmax attention (dropping the $\sqrt{D}$ for simplicity).
 
 
 ### 1st Order Approximation
 Consider the first-order Taylor expansion of the exponential:
 $$\exp(Q\_i K\_j^\top) \approx 1 + Q\_i K\_j^\top \tag{11}$$
 
-And defining a simple form $\phi(x) = \begin{bmatrix} 1 & x \end{bmatrix}$ recovers this, since:
+Defining a simple feature map $\phi(x) = \begin{bmatrix} 1 & x \end{bmatrix}$ recovers this, since:
 $$\phi(Q\_i)\phi(K\_j)^\top = \begin{bmatrix} 1 & Q\_i \end{bmatrix} \begin{bmatrix} 1 \\\\ K\_j^\top \end{bmatrix} = 1 + Q\_i K\_j^\top \tag{12}$$
 
 ### Full Exponential Kernel
 
-For but the full exponential kernel,
+For the full exponential kernel:
 $$\exp(Q\_i K\_j^\top) = \sum\_{n=0}^{\infty} \frac{(Q\_i K\_j^\top)^n}{n!} \tag{13}$$
 
-The answer is not no so obvious. In fact, it becomes an  <span style="color: #e67e22;">infinite feature map</span> (i.e. $D^\prime = \infty$):
+The decomposition isn't as obvious. In fact, it requires an <span style="color: #e67e22;">infinite feature map</span> (i.e., $D^\prime = \infty$):
 $$\phi(x) = \left[ 1, x, \frac{x^{\otimes 2}}{\sqrt{2!}}, \dots, \frac{x^{\otimes n}}{\sqrt{n!}}, \dots \right] \tag{14}$$
 
 
 ### What $\phi(\cdot)$ is used in literature?
 
+This shows that finding a tractable decomposition for the exact exponential kernel is difficult. Instead, researchers typically take one of two paths:
+1. **Approximate** the softmax kernel with a finite feature map (as seen in the Performer paper).
+2. **Move beyond** the exact softmax kernel and use a different similarity function that decomposes into a finite-dimensional $\phi(\cdot)$.
 
 
-This tells us it is infeasible to find an tractable decomposition of the exact exponential kernel used in softmax attention. However, the second bests are 1. approximate the softmax kernel with something finite (used in the Perfomer papaer) or 2. let' s forget about the exact softmax attention / exponential kernel, but let's use something that we can decompose into finite dimension $\phi(\cdot)$.
+In practice, any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ defines a valid kernel if $\phi(x) \geq 0$ (element-wise) for numerical stability. I personally see it as a trade-off: we sacrifice some properties of the exponential kernel for much better computational guarantees.
 
 
-In fact, any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ defines a valid kernel $sim$ if it satisfies $\phi(x) \geq 0$ (element-wise) for numerical stability. I personaly like to see it as we trade off some properties of the softmax / exp kernel with much better computation guarantee (aka linear attention).
+The following are common feature maps used in well-known models, they perform almost as good compared to standard softmax attention:
 
 
-The following are actual $\phi(\cdot)$ used in some well-known literature, and they are almost-as-good as the softmax attention in many tasks.
+<div align="center">
 
 | Model | Feature Map $\phi(x)$ | Goal |
 | :--- | :--- | :--- |
@@ -181,6 +183,7 @@ The following are actual $\phi(\cdot)$ used in some well-known literature, and t
 | **Performer** | Random Fourier Features | Softmax Approx. |
 | **Mamba-2 (SSD)** | Implicit (State Expansion) | - |
 
+</div>
 
 
 
