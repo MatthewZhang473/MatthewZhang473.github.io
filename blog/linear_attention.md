@@ -300,3 +300,15 @@ This post laid the mathematical foundation, but the story doesn't end here. In t
 If you find that code makes the math "click," check out the demo repository. I’ve implemented these models using Flash-Linear-Attention library so you can compare architectures like *Mamba-2* and *Gated DeltaNet* against a standard Llama-style Transformer using the TinyStories dataset.
 
 👉 [**linear-attention-demo**](https://github.com/MatthewZhang473/linear-attention-demo)
+
+## References
+
+1. **Vaswani, A., et al. (2017).** *Attention is all you need.* Advances in neural information processing systems.
+2. **Katharopoulos, A., et al. (2020).** *Transformers are rnns: Fast autoregressive transformers with linear attention.* International conference on machine learning.
+3. **Choromanski, K., et al. (2020).** *Rethinking attention with performers.* arXiv preprint arXiv:2009.14794.
+4. **Gu, A., et al. (2021).** *Efficiently Modeling Long Sequences with Structured State Spaces.* International Conference on Learning Representations (ICLR).
+5. **Sun, Y., et al. (2023).** *Retentive network: A successor to transformer for large language models.* arXiv preprint arXiv:2307.08621.
+6. **Gu, A., & Dao, T. (2024).** *Mamba: Linear-time sequence modeling with selective state spaces.* First conference on language modeling.
+7. **Dao, T., & Gu, A. (2024).** *Transformers are ssms: Generalized models and efficient algorithms through structured state space duality.* arXiv preprint arXiv:2405.21060.
+8. **Ren, L., et al. (2024).** *Samba: Simple Hybrid State Space Models for Efficient Unlimited Context Language Modeling.* arXiv preprint arXiv:2406.07522.
+9. **Yang, S., et al. (2024).** *Gated delta networks: Improving mamba2 with delta rule.* arXiv preprint arXiv:2412.06464.
