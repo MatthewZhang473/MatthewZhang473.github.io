@@ -60,39 +60,65 @@ Similarly, let's check out new training complexity by inspecting the shape chang
 </div>
 
 
-Hooray, it's linear! But you might ask, how can we find the $\Phi(\cdot)$?
+Hooray!  We've achieved linear complexity - but it still feels a bit like magic. To really get comfortable with this, we need to answer two practical questions:
+
+1. **How** does the softmax decomposition work?
+2. **What** exactly is $\Phi$?
+
+Let's walk through the derivation and see if we can make it all click.
 
 
-## Let's Derive Linear Attention
+## Let's Derive Linear Attention from First Principles
 
-To see how we get to the linear version, let's look at the calculation for the $i$-th row of the output matrix $V'$. Since the $i$-th row of the Softmax only depends on the $i$-th query $Q\_i$, we can write:
+To see how softmax is decomposed in the linear version paradigm, let's begin by looking at the $i$-th row of the Softmax in Equation 1, which only depends on the $i$-th query $Q\_i$:
 
 $$V'\_i = \text{softmax} \left( \frac{Q\_i K^\top}{\sqrt{D}} \right) V \tag{4}$$
 
+
+By expanding Equation (4), we can visualize it as a weighted combination of all values. Specifically, it is the dot product between the sequence of attention scores for query $Q_i$ and the corresponding value vectors:
+
+$$V'\_i = \begin{bmatrix} \text{softmax}\left(\frac{Q\_i K^\top}{\sqrt{D}}\right)\_1 & \dots & \text{softmax}\left(\frac{Q\_i K^\top}{\sqrt{D}}\right)\_T \end{bmatrix} \begin{bmatrix} V\_1 \\\\ \vdots \\\\ V\_T \end{bmatrix} \tag{5}$$
+
+
 > **Softmax Reminder**: For a row vector $\mathbf{x} \in \mathbb{R}^{1 \times T}$, the $j$-th element is $\text{softmax}(\mathbf{x})\_j = \frac{\exp(x\_j)}{\sum\_k \exp(x\_k)}$. 
 
-Expanding Equation (4), we can visualize the $i$-th row $V'\_i$ as the product of a row vector of softmax weights and a "column" of row vectors $\{V\_1, \dots, V\_T\}$:
-
-$$V'\_i = \begin{bmatrix} \text{softmax}(\frac{Q\_i K^\top}{\sqrt{D}})\_1 & \dots & \text{softmax}(\frac{Q\_i K^\top}{\sqrt{D}})\_T \end{bmatrix} \begin{bmatrix} V\_1 \\ \vdots \\ V\_T \end{bmatrix} \tag{5}$$
 
 By substituting the full definition of the softmax into each term, we get:
 
-$$V'\_i = \footnotesize \begin{bmatrix} \frac{\exp(Q\_i K\_1^\top / \sqrt{D})}{\sum\_k \exp(Q\_i K\_k^\top / \sqrt{D})} & \dots & \frac{\exp(Q\_i K\_T^\top / \sqrt{D})}{\sum\_k \exp(Q\_i K\_k^\top / \sqrt{D})} \end{bmatrix} \begin{bmatrix} V\_1 \\ \vdots \\ V\_T \end{bmatrix} \tag{6}$$
+$$V'\_i = \footnotesize \begin{bmatrix} \frac{\exp(Q\_i K\_1^\top / \sqrt{D})}{\sum\_k \exp(Q\_i K\_k^\top / \sqrt{D})} & \dots & \frac{\exp(Q\_i K\_T^\top / \sqrt{D})}{\sum\_k \exp(Q\_i K\_k^\top / \sqrt{D})} \end{bmatrix} \begin{bmatrix} V\_1 \\\\ \vdots \\\\ V\_T \end{bmatrix} \tag{6}$$
 
 Calculating this dot product results in the classic <span style="color: #e67e22;">weighted sum</span> of all rows $V\_j$:
 
-$$V\_i^{\prime} = \sum\_{j=1}^T \frac{\exp(Q\_i K\_j^\top / \sqrt{D})}{\sum\_{k=1}^T \exp(Q\_i K\_k^\top / \sqrt{D})} V\_j \tag{7}$$
+$$V\_i^{\prime} = \sum\_{j=1}^T \frac{\exp(Q\_i K\_j^\top / \sqrt{D})}{\sum\_{k=1}^T \exp(Q\_i K\_k^\top / \sqrt{D})} V\_j = \frac{\sum\_{j=1}^T \exp(Q\_i K\_j^\top / \sqrt{D}) V\_j}{\sum\_{k=1}^T \exp(Q\_i K\_k^\top / \sqrt{D})} \tag{7}$$
 
 
-We can make this more general by defining a similarity function (also known as *"kernel"* ) $\operatorname{sim}(Q\_i, K\_j) = \exp(Q\_i K\_j^\top / \sqrt{D})$. If we pull the denominator out of the sum, we get:
+We can make this more general by defining a similarity function (also known as *"kernel"* ) $\operatorname{sim}(Q\_i, K\_j) = \exp(Q\_i K\_j^\top / \sqrt{D})$. This simplifies Equation 6 to:
 
 $$V\_i^{\prime} = \frac{\sum\_{j=1}^T \operatorname{sim}(Q\_i, K\_j) V\_j}{\sum\_{k=1}^T \operatorname{sim}(Q\_i, K\_k)} \tag{8}$$
 
-This is the standard form. Now, the magic happens when we find a feature map $\phi(\cdot)$ such that $\operatorname{sim}(Q\_i, K\_j) = \phi(Q\_i) \phi(K\_j)^\top$:
+This is the standard form. Now, the magic happens when we find <span style="color: #e67e22;">a feature map $\phi(\cdot)$ such that $\operatorname{sim}(Q\_i, K\_j) = \phi(Q\_i) \phi(K\_j)^\top$</span> (we will see what $\phi(\cdot)$ is in a moment):
 
-$$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top V\_j \right)}{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top \right)} \tag{9}$$
+$$V'\_i = \frac{\sum\_{j=1}^T (\textcolor{#3498db}{\phi(Q\_i)} \phi(K\_j)^\top) V\_j}{\sum\_{k=1}^T \textcolor{#3498db}{\phi(Q\_i)} \phi(K\_k)^\top} = \frac{\textcolor{#3498db}{\phi(Q\_i)} \left( \sum\_{j=1}^{T} \phi(K\_j)^\top V\_j \right)}{\textcolor{#3498db}{\phi(Q\_i)} \left( \sum\_{k=1}^{T} \phi(K\_k)^\top \right)} \tag{9}$$
+
+
+By re-arranging the terms, we have successfully decoupled $Q$ and $K$! 
+
+To process the entire sequence at once, we "stack" our feature-mapped vectors into matrices $\Phi(Q), \Phi(K) \in \mathbb{R}^{T \times D'}$, and define $\mathbf{1}_T \in \mathbb{R}^{T \times 1} $ as a column vector of ones:
+
+$$\Phi(Q) = \begin{bmatrix} \phi(Q_1)^\top \\\\ \vdots \\\\ \phi(Q_T)^\top \end{bmatrix}, \quad \Phi(K) = \begin{bmatrix} \phi(K_1)^\top \\\\ \vdots \\\\ \phi(K_T)^\top \end{bmatrix}, \quad \mathbf{1}_T = \begin{bmatrix} 1 \\\\ \vdots \\\\ 1 \end{bmatrix}$$
+The full linearized attention for the entire sequence becomes:
+
+$$V' = \frac{\Phi(Q) \left( \Phi(K)^\top V \right)}{\Phi(Q) \left( \Phi(K)^\top \mathbf{1}_T \right)} \tag{10}$$
+
+> Note: The division is performed row-wise, broadcasting the denominator.
+
+
+
 
 ### Training Complexity: Detailed Breakdown
+
+Finally, we can eyeball the time complexities by tracing all the operations in Equation 10:
+
 
 <div align="center">
 
@@ -110,24 +136,44 @@ $$V'\_i = \frac{\phi(Q\_i) \left( \sum\_{j=1}^{T} \phi(K\_j)^\top V\_j \right)}{
 </div>
 
 
+$\mathcal{O}(T)$ complexity, just as expected!
 
-## Deriving the Feature Map $\phi(x)$
+
+## Deriving the Feature Map $\phi(\cdot)$
+
+Now that we know the $\mathcal{O}(T)$ complexity, let's try to answer the second question: can we find a $\phi(\cdot)$ so that 
+$\operatorname{sim}(Q\_i, K\_j) = \phi(Q\_i) \phi(K\_j)^\top$
+
+Let's begin with the exponential kernel $\operatorname{sim}(Q\_i, K\_j) = \exp(Q\_i K\_j^\top)$ used in softmax attention. (I dropped the $\sqrt{D}$ for simplicity).
+
 
 ### 1st Order Approximation
 Consider the first-order Taylor expansion of the exponential:
-$$\exp(Q\_i K\_j^\top) \approx 1 + Q\_i K\_j^\top \tag{10}$$
+$$\exp(Q\_i K\_j^\top) \approx 1 + Q\_i K\_j^\top \tag{11}$$
 
-Defining $\phi(x) = \begin{bmatrix} 1 & x \end{bmatrix}$ recovers this, since:
-$$\phi(Q\_i)\phi(K\_j)^\top = \begin{bmatrix} 1 & Q\_i \end{bmatrix} \begin{bmatrix} 1 \\ K\_j^\top \end{bmatrix} = 1 + Q\_i K\_j^\top \tag{11}$$
+And defining a simple form $\phi(x) = \begin{bmatrix} 1 & x \end{bmatrix}$ recovers this, since:
+$$\phi(Q\_i)\phi(K\_j)^\top = \begin{bmatrix} 1 & Q\_i \end{bmatrix} \begin{bmatrix} 1 \\\\ K\_j^\top \end{bmatrix} = 1 + Q\_i K\_j^\top \tag{12}$$
 
 ### Full Exponential Kernel
-$$\exp(Q\_i K\_j^\top) = \sum\_{n=0}^{\infty} \frac{(Q\_i K\_j^\top)^n}{n!} \tag{12}$$
 
-Which implies an infinite feature map:
-$$\phi(x) = \left[ 1, x, \frac{x^{\otimes 2}}{\sqrt{2!}}, \dots, \frac{x^{\otimes n}}{\sqrt{n!}}, \dots \right] \tag{13}$$
+For but the full exponential kernel,
+$$\exp(Q\_i K\_j^\top) = \sum\_{n=0}^{\infty} \frac{(Q\_i K\_j^\top)^n}{n!} \tag{13}$$
+
+The answer is not no so obvious. In fact, it becomes an  <span style="color: #e67e22;">infinite feature map</span> (i.e. $D^\prime = \infty$):
+$$\phi(x) = \left[ 1, x, \frac{x^{\otimes 2}}{\sqrt{2!}}, \dots, \frac{x^{\otimes n}}{\sqrt{n!}}, \dots \right] \tag{14}$$
+
 
 ### What $\phi(\cdot)$ is used in literature?
-Any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ works if it satisfies $\phi(x) \geq 0$ (element-wise) for numerical stability.
+
+
+
+This tells us it is infeasible to find an tractable decomposition of the exact exponential kernel used in softmax attention. However, the second bests are 1. approximate the softmax kernel with something finite (used in the Perfomer papaer) or 2. let' s forget about the exact softmax attention / exponential kernel, but let's use something that we can decompose into finite dimension $\phi(\cdot)$.
+
+
+In fact, any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ defines a valid kernel $sim$ if it satisfies $\phi(x) \geq 0$ (element-wise) for numerical stability. I personaly like to see it as we trade off some properties of the softmax / exp kernel with much better computation guarantee (aka linear attention).
+
+
+The following are actual $\phi(\cdot)$ used in some well-known literature, and they are almost-as-good as the softmax attention in many tasks.
 
 | Model | Feature Map $\phi(x)$ | Goal |
 | :--- | :--- | :--- |
@@ -141,21 +187,21 @@ Any feature map $\phi: \mathbb{R}^D \to \mathbb{R}^{D'}$ works if it satisfies $
 
 ## Make Inference Like an RNN
 
-Causal linear attention layers can be viewed as RNNs where $S\_i$ and $Z\_i$ act as internal hidden states (memory).
+Causal linear attention layers can be viewed as RNNs where $s\_i$ and $z\_i$ act as internal hidden states (memory).
 
 **State Updates:**
-$$s\_i = s\_{i-1} + \phi(x\_i W\_K) (x\_i W\_V)^T \tag{14}$$
-$$z\_i = z\_{i-1} + \phi(x\_i W\_K) \tag{15}$$
+$$s\_i = s\_{i-1} + \phi(x\_i W\_K)^\top (x\_i W\_V) \tag{15}$$
+$$z\_i = z\_{i-1} + \phi(x\_i W\_K)^\top \tag{16}$$
 
 **Output Prediction:**
-$$y\_i = f\_l \left( \frac{\phi(x\_i W\_Q)^T s\_i}{\phi(x\_i W\_Q)^T z\_i} + x\_i \right) \tag{16}$$
+$$y\_i = f\_l \left( \frac{\phi(x\_i W\_Q) s\_i}{\phi(x\_i W\_Q) z\_i} + x\_i \right) \tag{17}$$
 
 ### Complexity Summary
-*   **Training complexity:** $O(T)$
-*   **Inference complexity:** $O(1)$
-    1. Update KV State: $S_{new} = S_{old} + k_{new}^T v_{new}$ ($O(D^2)$)
-    2. Update Normalizer: $z_{new} = z_{old} + k_{new}$ ($O(D)$)
-    3. Compute Output: $y_{new} = f_l \left( \frac{q_{new} S_{new}}{q_{new} z_{new}^T} + x_{new} \right)$ ($O(D^2)$)
+*   **Training complexity:** $O(T \cdot D \cdot D')$
+*   **Inference complexity:** $O(D \cdot D')$ (constant per step relative to $T$)
+    1. Update KV State: $s_{new} = s_{old} + \phi(k_{new})^\top v_{new}$ ($O(D \cdot D')$)
+    2. Update Normalizer: $z_{new} = z_{old} + \phi(k_{new})^\top$ ($O(D')$)
+    3. Compute Output: $y_{new} = f\_l \left( \frac{\phi(q_{new}) s_{new}}{\phi(q_{new}) z_{new}} + x_{new} \right)$ ($O(D \cdot D')$)
 
 ## The Evolution of Linear Models
 
