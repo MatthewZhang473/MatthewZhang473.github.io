@@ -2,6 +2,127 @@
 
 // 1. Blog Functionality
 let currentPostUrl = '';
+let activeHeadingObserver;
+
+function slugifyHeading(text) {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+}
+
+function scrollToHeading(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildBlogNavigation(viewer) {
+    if (!viewer) return;
+
+    const toc = document.getElementById('blog-toc');
+    const tocNav = document.getElementById('blog-toc-nav');
+    if (!toc || !tocNav) return;
+
+    const headings = Array.from(viewer.querySelectorAll('h2, h3'));
+    const slugCounts = new Map();
+
+    const getHeadingMarkup = heading => {
+        const clone = heading.cloneNode(true);
+        clone.querySelectorAll('.heading-anchor').forEach(node => node.remove());
+        clone.querySelectorAll('.katex-mathml').forEach(node => node.remove());
+        return clone.innerHTML.trim();
+    };
+
+    headings.forEach(heading => {
+        const plainText = heading.textContent.trim();
+        const baseSlug = slugifyHeading(plainText) || 'section';
+        const count = slugCounts.get(baseSlug) || 0;
+        slugCounts.set(baseSlug, count + 1);
+
+        const slug = count === 0 ? baseSlug : `${baseSlug}-${count + 1}`;
+        heading.id = slug;
+        heading.classList.add('anchored-heading');
+
+        const anchor = document.createElement('a');
+        anchor.href = '#';
+        anchor.className = 'heading-anchor';
+        anchor.setAttribute('aria-label', `Scroll to ${plainText}`);
+        anchor.textContent = '#';
+        anchor.addEventListener('click', event => {
+            event.preventDefault();
+            scrollToHeading(slug);
+        });
+        heading.appendChild(anchor);
+    });
+
+    tocNav.innerHTML = '';
+    if (headings.length === 0) {
+        toc.style.display = 'none';
+        return;
+    }
+
+    toc.style.display = 'block';
+    const list = document.createElement('ol');
+    list.className = 'blog-toc-list';
+
+    headings.forEach(heading => {
+        const item = document.createElement('li');
+        item.className = `toc-${heading.tagName.toLowerCase()}`;
+
+        const link = document.createElement('a');
+        link.href = '#';
+        link.dataset.target = heading.id;
+        link.innerHTML = getHeadingMarkup(heading);
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            scrollToHeading(heading.id);
+        });
+
+        item.appendChild(link);
+        list.appendChild(item);
+    });
+
+    tocNav.appendChild(list);
+
+    if (activeHeadingObserver) {
+        activeHeadingObserver.disconnect();
+    }
+
+    activeHeadingObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            const link = tocNav.querySelector(`[data-target="${entry.target.id}"]`);
+            if (!link) return;
+
+            if (entry.isIntersecting) {
+                tocNav.querySelectorAll('a').forEach(anchor => anchor.classList.remove('active'));
+                link.classList.add('active');
+            }
+        });
+    }, {
+        rootMargin: '-20% 0px -65% 0px',
+        threshold: 0
+    });
+
+    headings.forEach(heading => activeHeadingObserver.observe(heading));
+
+    const referenceHeading = headings.find(heading =>
+        heading.textContent.replace(/#$/, '').trim().toLowerCase() === 'references'
+    );
+
+    if (referenceHeading) {
+        const referenceList = referenceHeading.nextElementSibling;
+        if (referenceList && referenceList.tagName === 'OL') {
+            referenceList.classList.add('reference-list');
+            Array.from(referenceList.children).forEach((item, index) => {
+                item.classList.add('reference-item');
+                item.dataset.referenceNumber = `${index + 1}`;
+            });
+        }
+    }
+}
 
 function loadBlogPost(url, skipHashUpdate = false) {
     const blogList = document.querySelector('.blog-preview-list');
@@ -52,6 +173,8 @@ function loadBlogPost(url, skipHashUpdate = false) {
                     throwOnError: false
                 });
             }
+
+            buildBlogNavigation(viewer);
 
             // 3. Render Mermaid Diagrams
             const mermaidBlocks = viewer.querySelectorAll('code.language-mermaid');
@@ -121,6 +244,9 @@ function showBlogList() {
 
         currentPostUrl = '';
         window.location.hash = '';
+        if (activeHeadingObserver) {
+            activeHeadingObserver.disconnect();
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }

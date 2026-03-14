@@ -89,8 +89,14 @@
                                 <button id="lang-cn" class="lang-btn" onclick="changeLanguage('cn')">简</button>
                             </div>
                         </div>
-                        <!-- 'markdown-body' is the standard class for GitHub CSS -->
-                        <article id="markdown-viewer" class="markdown-body"></article>
+                        <div class="blog-reading-layout">
+                            <aside class="blog-toc" id="blog-toc" aria-label="Table of contents">
+                                <p class="blog-toc-title">Contents</p>
+                                <nav id="blog-toc-nav"></nav>
+                            </aside>
+                            <!-- 'markdown-body' is the standard class for GitHub CSS -->
+                            <article id="markdown-viewer" class="markdown-body"></article>
+                        </div>
                     </div>
                 </div>
             </section>
