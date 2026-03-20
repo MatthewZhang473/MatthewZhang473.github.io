@@ -36,72 +36,70 @@ Let's try to answer this question together from a probabilistic point of view.
 
 ### Linear Model
 
+Let's consider the simplest case: a linear model. Suppose we have $N$ pairs of data points $\{(\mathbf{x}^{(i)}, y^{(i)})\}_{i=1}^N$, where $\mathbf{x}^{(i)} \in \mathbb{R}^m$ is an $m$-dimensional input vector and $y^{(i)} \in \mathbb{R}$ is a scalar output.
 
-Let's consider a simplest linear model. Say we have $N$ pairs of datapoints $(\mathbf{x}^{(i)}, y^{(i)}), i = 1, ..., N$, where $\mathbf{x}_i$ is $m$-dimensional input, i.e. $\mathbf{x}^{(i)} = [x_1^{(i)}, x_2^{(i)}, ..., x_m^{(i)}]$ and $y_i$ is scalar output. 
+We define our linear model for a single point as:
 
-We can then define a linear model:
+$$\hat{y}^{(i)} = w_0 + w_1 x_1^{(i)} + \dots + w_{m} x_{m}^{(i)}$$
 
+By prepending a $1$ to each input vector $\mathbf{x}^{(i)}$ to account for the bias term $w_0$, we can stack the inputs into a design matrix $X \in \mathbb{R}^{N \times (m+1)}$ and the outputs into a vector $\mathbf{y} \in \mathbb{R}^{N}$. The model becomes:
 
-$$\hat{y}^{(i)} = w_0 + w_1 x_1^{(i)} + ... + w_{m} x_{m}^{(i)}$$
+$$\mathbf{\hat{y}} = X \mathbf{w}$$
 
+You might already be familiar with this setup. To find the "best" $\mathbf{w}$, we typically minimize the Mean Squared Error (MSE):
 
-We can stack them up into $X \in R^{N,m+1}, \mathbf{y} \in R^{N}$, and get the following linear model:
+$$\text{MSE}(\mathbf{w}) := \frac{1}{2}\|\mathbf{\hat{y}} - \mathbf{y}\|^2 = \frac{1}{2}\|X\mathbf{w} - \mathbf{y}\|^2$$
 
+The closed-form solution that minimizes this loss is the well-known OLS (Ordinary Least Squares) estimator:
 
-$$\mathbf{\hat{y}} = X \mathbf{w} $$
+$$\mathbf{w}^* = (X^TX)^{-1}X^T\mathbf{y}$$
 
+Cool—but *why* do we do it this way?
 
-You might already be familiar with such model: let's compute the mean-square error (MSE):
+### Rethink Linear Regression with Probability
 
-$$\text{MSE} := \frac{1}{2}||\hat{y} - y||^2 $$
-
-
-and find solution that minimise it:
-
-$$\mathbf{w} = (X^TX)^{-1}X^Ty$$
-
-
-
-cool, but why do we do it?
-
-
-### Derive the linear model
-
-
-Back to the Eqn.2, what we are really saying is that:
-
+The equation above assumes a deterministic relationship, but in reality, our observations are often noisy:
 
 $$\mathbf{y} = X \mathbf{w} + \boldsymbol{\epsilon}$$
 
-, where $\boldsymbol{\epsilon} \in R^{N}$ is the random noise that we cannot capture with our model.
+where $\boldsymbol{\epsilon} \in \mathbb{R}^{N}$ is a random noise vector representing the factors we cannot capture with our model.
 
+How should we model this noise? Ideally, we want a few properties:
+1. **Unbiased**: The noise should have a zero mean so it doesn't systematically shift our predictions.
+2. **Concentrated**: Small errors should be more likely than large ones.
+3. **Independent**: The noise in one observation shouldn't tell us anything about the noise in another.
 
-How do we model this noise? There are several conditions we want to get:
+These requirements naturally lead us to model the noise as **Independent and Identically Distributed (i.i.d.) Gaussian** random variables with zero mean and variance $\sigma^2$:
 
-1. We want our prediction to be *unbiased*, hence this noise should have zero mean.
-2. ideally the magitude of the noise is small, ideally within one standard deviation $\sigma$ from 0.
-3. the noise from each pair of data point $(\mathbf{x}^{(i)}, y^{(i)})$ should be independent
+$$\epsilon^{(i)} \sim \mathcal{N}(0, \sigma^2) \implies \boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \sigma^2 \mathbf{I})$$
 
-This natually gives us a way to model this noise, 
-how about we make it a identitical and independent (i.i.d.) Gaussian random noise with zero mean and some fixed standard deviation $\sigma$.
+In other words, our **assumption** is that the residuals follow a Gaussian distribution.
 
-i.e.
+Now comes the interesting part: for any given parameter $\mathbf{w}$, the probability (likelihood) of observing our data $\mathbf{y}$ is determined by the probability of those residuals $\boldsymbol{\epsilon} = \mathbf{y} - X\mathbf{w}$ occurring under our Gaussian assumption:
 
-$$\boldsymbol{\epsilon} \sim N(\mathbb{0}, \Sigma)$$.
+$$P(\text{data} | \text{model}) = P(\mathbf{y} | X, \mathbf{w}) = \prod_{i=1}^N \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left( -\frac{(y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w})^2}{2\sigma^2} \right)$$
 
+This turns our regression problem into a Maximum Likelihood Estimation (MLE) problem: can we find the parameter $\mathbf{w}^*$ that maximizes this probability?
 
+### From Likelihood to MSE
 
-in other words, here is our **assumption** on the residues: for our linear model, the distribution of the residuals are i.i.d. Gaussian noise.
+Maximizing a product of exponentials is mathematically identical to maximizing the **Log-Likelihood**, which is much easier to work with:
 
+$$
+\log p(\mathbf{y} | X, \mathbf{w}) = \sum_{i=1}^N \left[ \underbrace{-\log\sqrt{2\pi\sigma^2}}_{\text{constant}} - \frac{(y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w})^2}{2\sigma^2} \right]
+$$
 
-Now comes the interesting bit, with every possible parameter $\mathbf{w}$,
-we can compute the residuals $\boldsymbol{\epsilon} = \mathbf{y} - X\mathbf{w}$
-then given the noise are gaussianly distributed: $\boldsymbol{\epsilon} \sim N(\mathbb{0}, \Sigma)$,
-we can find $P(\boldsymbol{\epsilon})$ by substituting the residuals into the distribution:
-$$N(\boldsymbol{\epsilon} |\mathbb{0}, \Sigma) = (... here give the gaussian formula)$$
+When we maximize this with respect to $\mathbf{w}$, the constant term disappears. We are left with:
 
+$$\mathbf{w}^* = \arg\max_{\mathbf{w}} \left( -\frac{1}{2\sigma^2} \sum_{i=1}^N (y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w})^2 \right)$$
 
-This turns our linear regression problem into a probability problem: can we find the parameter $\mathbf{w^*}$ that maximizes this probability?
+Removing the negative sign and the constant $1/2\sigma^2$ (which doesn't change the location of the maximum), we get:
+
+$$\mathbf{w}^* = \arg\min_{\mathbf{w}} \frac{1}{2} \sum_{i=1}^N (y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w})^2$$
+
+**And there it is!** Maximizing the likelihood under a Gaussian noise assumption is exactly the same as minimizing the Mean Squared Error. We've just proven that MSE isn't just an arbitrary choice—it's the mathematically "correct" thing to do if you believe your errors are Gaussian.
+
+But this still doesn't explain L2 regularization. To get there, we need to go one step further: from Likelihood to **Posterior**.
 
 
 
