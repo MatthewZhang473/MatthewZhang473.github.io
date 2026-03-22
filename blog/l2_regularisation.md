@@ -1,27 +1,4 @@
-# Blog Post 3: L2 regularisation
-
-<!-- 
-
-**Structure:**
-- [x] What is L2-regularisation actually doing: Linear model: Y = X@beta + epsilon
-   1. you might be familiar with linear model, MSE loss, ... let's see why this is the case
-   2. assumption: each datapoint we observed have gaussian noise, we want to maximise the likelihood: max P(data | model)
-   3. leads to minimizing MSE -> gradient -> solution
-   4. but you see, what we really want is max P(model | data) -> needs a prior
-   5. what is a good prior? zero mean, some variance around it -> gaussian
-   6. derive the L2-regularised loss -> gradient -> solution
-
-- [ ] Why does introducing this prior improves stability
-  1. a coding example, 1D ground truth function + observation near x=1 + noise
-  2. try to do fit: ill-conditioned system -> high variance in weight
-  3. introducing prior, much more stable solutions
-
-- [ ] What about dropout?
-    1. https://chatgpt.com/s/t_69bbd2ac418481918a64e9f472f1ea5c
-    2. see how similar it is compared to L2 regularisation! -->
-
-
-
+# A Probabilistic PoV to Regularisation
 
 
 
@@ -211,7 +188,7 @@ So the question reduces to: how stable is the inverse of $X^\top X$, and what ch
 
 ### Step 1: Condition Number Measures Stability
 
-Consider solving a linear system
+In practice, we would solve a linear system $(X^\top X) \mathbf{x} = \mathbf{b}$ rather than solving the inverse. Consider solving a linear system
 
 $$A\mathbf{x} = \mathbf{b} \tag{24}$$
 
@@ -219,13 +196,15 @@ and suppose the right-hand side is perturbed to $\mathbf{b} + \delta \mathbf{b}$
 
 $$(\mathbf{x} + \delta \mathbf{x}) = A^{-1}(\mathbf{b} + \delta \mathbf{b}) \qquad \Longrightarrow \qquad \delta \mathbf{x} = A^{-1}\delta \mathbf{b} \tag{25}$$
 
-Taking norms gives the standard perturbation bound
+The key point is that a small perturbation in the data can be amplified by the inverse matrix. This is quantified by the condition number:
 
-$$\frac{\|\delta \mathbf{x}\|_2}{\|\mathbf{x}\|_2} \le \kappa_2(A)\frac{\|\delta \mathbf{b}\|_2}{\|\mathbf{b}\|_2}, \qquad \kappa_2(A) := \|A\|_2\|A^{-1}\|_2  = \frac{\|\mu\_{\max}\|}{\|\mu\_{\min}\|} \tag{26}$$
+$$\kappa_2(A) := \|A\|_2\|A^{-1}\|_2 \tag{26}$$
 
+For a symmetric positive definite matrix, the $2$-norm is the largest eigenvalue, so if the eigenvalues of $A$ are $0 < \mu_{\min} \le \mu_{\max}$, then
 
-In other words, even though $\mu\_{\text{min}} > 0$ is suffcient for the the matrix $A$ to be invertible, the conditional number  $\frac{\|\mu\_{\max}\|}{\|\mu\_{\min}\|} $ determines how easy can we solve it.
+$$\kappa_2(A) = \frac{\mu_{\max}}{\mu_{\min}} \tag{27}$$
 
+So even though $\mu_{\min} > 0$ is enough to guarantee invertibility, a very small $\mu_{\min}$ still makes the system numerically unstable because it makes $\kappa_2(A)$ very large.
 
 
 ### Step 2: Eigenvalues of $X^\top X$
@@ -238,32 +217,38 @@ so $X^\top X$ is symmetric positive semi-definite. Therefore all its eigenvalues
 
 $$\mu_1, \dots, \mu_{m+1} \ge 0 \tag{31}$$
 
-However, this is not suffcient for $X^{\top} X$ to be invertible, and even so, a very small $\mu\_{\text{min}}$ can make it highly unstable.
+If the columns of $X$ are linearly dependent, then some eigenvalue is exactly zero and $X^\top X$ is not invertible. Even when $X^\top X$ is invertible, the smallest eigenvalue can still be very close to zero, which makes
+
+$$\kappa_2(X^\top X) = \frac{\mu_{\max}}{\mu_{\min}} \tag{32}$$
+
+very large.
 
 ### Step 3: L2 Regularisation Shifts the Spectrum
 
-Consider any eigenvector $v^{*}$ of $X^{\top}X$ with eigenvalue 
+Now let $\mathbf{v}^*$ be an eigenvector of $X^\top X$. Then
 
-$\mu^{*}$, we have:
+$$X^\top X \mathbf{v}^* = \mu^* \mathbf{v}^* \tag{33}$$
 
-$$(X^\top X + \lambda I)v  = X^\top Xv + \lambda I v = (\mu^* + \lambda)v$$ 
+and therefore
 
+$$(X^\top X + \lambda I)\mathbf{v}^* = X^\top X\mathbf{v}^* + \lambda \mathbf{v}^* = (\mu^* + \lambda)\mathbf{v}^* \tag{34}$$
 
-i.e. $X^\top X + \lambda I$ shares the same eigenvectors, but with the eigenvalues all increase $\lambda$.
-
-
-For any positive $\lambda$, we now not only guarantee invertible, and also get a nicer conditoinal number:
+So $X^\top X + \lambda I$ has the same eigenvectors as $X^\top X$, but every eigenvalue is shifted upward by $\lambda$.
 
 
-$$\kappa_2(X^\top X + \lambda I) = \frac{\mu_{\max} + \lambda}{\mu_{\min} + \lambda} \tag{39}$$
+Hence
 
-Splendid!
+$$\kappa_2(X^\top X + \lambda I) = \frac{\mu_{\max} + \lambda}{\mu_{\min} + \lambda} \tag{36}$$
+
+This is smaller than $\mu_{\max}/\mu_{\min}$, and remains finite even when $\mu_{\min} = 0$.
+
+In other words, L2 regularisation pushes the small eigenvalues away from zero, which directly improves the condition number of the matrix we need to invert and improves numerical stability.
 
 
 
 ### Coding Example
 
-Check out this 1D example to demonstrate how adding L2 regularisation improves the stability.
+Check out this [1D example](https://colab.research.google.com/drive/1mWcuKyR_XwmSBUXdw2PRaHcXAKI0L4iz?usp=sharing) to demonstrate how adding L2 regularisation improves the stability.
 
 
 
