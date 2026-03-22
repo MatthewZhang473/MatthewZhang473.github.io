@@ -25,11 +25,9 @@
 
 
 
-My friend Mr.K who studies chemistry. The other day he asked me a question: "Why do we use L2 regularisation in ML, how does it magically make the model training more stable / reduce overfitting?"
+My chemist friend Mr.K who asked me a question: "Why do we use L2 regularisation in ML, how does it magically make the model training more stable / reduce overfitting?"
 
 Let's try to answer this question together from a probabilistic point of view.
-
-
 
 
 
@@ -195,7 +193,7 @@ $$\mathbf{w}^*_{\mathrm{MAP}} = \arg\min_{\mathbf{w}} \left[ \frac{1}{2}\|\mathb
 And that is the key connection: **L2 regularisation is exactly what you get when you do MAP estimation with a zero-mean Gaussian prior on the weights.**
 
 
-## How Does L2 Regularisation Improves Stability?
+## How Does L2 Regularisation Improves Numerical Stability?
 
 Linear algebra PoV:
 - [ ] why $(X^TX)^{-1}$ is theoretically solvable but unstable
@@ -209,89 +207,77 @@ Linear algebra PoV:
 
 At this point, it is natural to ask: *is dropout doing something similar to L2 regularisation?*
 
-The answer is **yes, but with an important caveat**. In expectation, dropout adds a quadratic penalty, so it behaves like a kind of ridge regularisation. However, the penalty is generally **data-dependent**, so it is not exactly the same as the isotropic $\|\mathbf{w}\|^2$ penalty we derived above.
-
-To see this clearly, let's work through the derivation in the setting of **inverted dropout**.
+The answer is **yes**, and let's work through the derivation with a simple example.
 
 ### Setup
 
 Let
 
-$$X \in \mathbb{R}^{N \times d}, \quad \mathbf{y} \in \mathbb{R}^{N}, \quad \mathbf{w} \in \mathbb{R}^{d} \tag{22}$$
+$$X \in \mathbb{R}^{N \times (m+1)}, \quad \mathbf{y} \in \mathbb{R}^{N}, \quad \mathbf{w} \in \mathbb{R}^{m+1} \tag{22}$$
 
-and define a random diagonal dropout matrix
+just as before.
 
-$$D = \operatorname{diag}(\delta_1, \dots, \delta_d), \qquad \delta_j = \frac{z_j}{1-p}, \qquad z_j \sim \operatorname{Bernoulli}(1-p) \tag{23}$$
+To model dropout, we place a random mask directly on the entries of the data matrix $X$. On each forward pass, each entry is either kept or dropped independently, and the surviving entries are rescaled so that the expected input stays the same.
 
-independently for each feature $j$.
+Let $M \in \mathbb{R}^{N \times (m+1)}$ be the random mask, with entries
 
-This is the standard inverted-dropout convention: with probability $p$, a feature is dropped to zero; with probability $1-p$, it is kept and rescaled by $1/(1-p)$.
+$$M_{ij} = \frac{z_{ij}}{1-p}, \qquad z_{ij} \sim \operatorname{Bernoulli}(1-p) \tag{23}$$
+
+independently for each data point $i = 1, \dots, N$ and feature $j = 0, \dots, m$.
+
+So with probability $p$, an entry is dropped to zero; with probability $1-p$, it is kept and rescaled by $1/(1-p)$.
 
 The dropped-out predictor is
 
-$$\hat{\mathbf{y}} = XD\mathbf{w} \tag{24}$$
+$$\hat{\mathbf{y}} = (X \odot M)\mathbf{w} \tag{24}$$
 
 and the loss for one realization of the dropout mask is
 
-$$L_D(\mathbf{w}) = \|\mathbf{y} - XD\mathbf{w}\|^2 \tag{25}$$
+$$L_M(\mathbf{w}) = \|\mathbf{y} - (X \odot M)\mathbf{w}\|^2 \tag{25}$$
 
 What we really optimize in expectation is
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbb{E}_D\left[\|\mathbf{y} - XD\mathbf{w}\|^2\right] \tag{26}$$
+$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbb{E}_M\left[\|\mathbf{y} - (X \odot M)\mathbf{w}\|^2\right] \tag{26}$$
 
 ### Expand the Expected Loss
 
-Expanding the square gives
+Because the loss is a sum over data points, it is convenient to look at one sample at a time. For the $i$-th data point,
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbf{y}^\top \mathbf{y} - 2\mathbf{y}^\top X \, \mathbb{E}[D] \, \mathbf{w} + \mathbf{w}^\top \mathbb{E}[DX^\top XD] \mathbf{w} \tag{27}$$
+$$\hat{y}^{(i)} = \sum_{j=0}^{m} X_{ij} M_{ij} w_j \tag{27}$$
 
-So the problem reduces to computing two quantities:
+Since $\mathbb{E}[M_{ij}] = 1$, the dropped-out prediction is unbiased:
 
-- $\mathbb{E}[D]$
-- $\mathbb{E}[DX^\top XD]$
+$$\mathbb{E}[\hat{y}^{(i)}] = \sum_{j=0}^{m} X_{ij} w_j = \mathbf{x}^{(i)\top}\mathbf{w} \tag{28}$$
 
-### First Key Identity: $\mathbb{E}[D] = I$
+Now use the identity
 
-Since $\delta_j = z_j/(1-p)$ and $\mathbb{E}[z_j] = 1-p$, we have
+$$\mathbb{E}\left[(y^{(i)} - \hat{y}^{(i)})^2\right] = \left(y^{(i)} - \mathbb{E}[\hat{y}^{(i)}]\right)^2 + \operatorname{Var}(\hat{y}^{(i)}) \tag{29}$$
 
-$$\mathbb{E}[\delta_j] = 1 \qquad \Longrightarrow \qquad \mathbb{E}[D] = I \tag{28}$$
+So the problem reduces to computing the variance of $\hat{y}^{(i)}$.
 
-This is exactly why inverted dropout is convenient: the mean prediction is unchanged.
+Because the masks are independent across features,
 
-### Second Key Identity: $\mathbb{E}[DX^\top XD]$
+$$\operatorname{Var}(\hat{y}^{(i)}) = \sum_{j=0}^{m} X_{ij}^2 w_j^2 \operatorname{Var}(M_{ij}) \tag{30}$$
 
-Let
+and since
 
-$$G := X^\top X \tag{29}$$
+$$\operatorname{Var}(M_{ij}) = \frac{1}{1-p} - 1 = \frac{p}{1-p} \tag{31}$$
 
-Then we need to compute $\mathbb{E}[DGD]$. Its $(i,j)$-entry is
+we get
 
-$$\left(DGD\right)_{ij} = \delta_i \delta_j G_{ij} \tag{30}$$
-
-Now consider two cases:
-
-- If $i \neq j$, independence gives $\mathbb{E}[\delta_i \delta_j] = \mathbb{E}[\delta_i]\mathbb{E}[\delta_j] = 1$.
-- If $i = j$, then $\delta_i^2 = z_i/(1-p)^2$, so $\mathbb{E}[\delta_i^2] = 1/(1-p)$.
-
-Therefore the off-diagonal entries are unchanged, while the diagonal entries are inflated by a factor $1/(1-p)$. Equivalently,
-
-$$\mathbb{E}[DGD] = G + \left(\frac{1}{1-p} - 1\right)\operatorname{diag}(G) = G + \frac{p}{1-p}\operatorname{diag}(G) \tag{31}$$
-
-Substituting back $G = X^\top X$, we get the key identity
-
-$$\mathbb{E}[DX^\top XD] = X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X) \tag{32}$$
+$$\operatorname{Var}(\hat{y}^{(i)}) = \frac{p}{1-p}\sum_{j=0}^{m} X_{ij}^2 w_j^2 \tag{32}$$
 
 ### The Effective Objective
 
-Plugging Eqs. (28) and (32) into Eq. (27), we obtain
+Plugging Eqs. (28) and (32) into Eq. (29), we obtain
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbf{y}^\top \mathbf{y} - 2\mathbf{y}^\top X\mathbf{w} + \mathbf{w}^\top\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w} \tag{33}$$
+$$\mathbb{E}\left[(y^{(i)} - \hat{y}^{(i)})^2\right] = \left(y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w}\right)^2 + \frac{p}{1-p}\sum_{j=0}^{m} X_{ij}^2 w_j^2 \tag{33}$$
 
-Using
+Now sum over all data points $i = 1, \dots, N$:
 
-$$\|\mathbf{y} - X\mathbf{w}\|^2 = \mathbf{y}^\top \mathbf{y} - 2\mathbf{y}^\top X\mathbf{w} + \mathbf{w}^\top X^\top X \mathbf{w} \tag{34}$$
+$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\sum_{j=0}^{m}\left(\sum_{i=1}^{N} X_{ij}^2\right) w_j^2 \tag{34}$$
 
-this simplifies to
+But $\sum_{i=1}^{N} X_{ij}^2$ is exactly the $j$-th diagonal entry of $X^\top X$, so this simplifies to
 
 $$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\mathbf{w}^\top \operatorname{diag}(X^\top X)\mathbf{w} \tag{35}$$
 
@@ -339,7 +325,4 @@ which is exactly ridge regression.
 So the clean summary is:
 
 - a Gaussian prior leads exactly to ordinary L2 regularisation
-- inverted dropout leads, in expectation, to a weighted version of L2 regularisation
-- after feature normalization, the two become much closer
-
-## Reference
+- dropout leads, in expectation, to a weighted version of L2 regularisation
