@@ -207,4 +207,139 @@ Linear algebra PoV:
 
 ## What About Dropout?
 
+At this point, it is natural to ask: *is dropout doing something similar to L2 regularisation?*
+
+The answer is **yes, but with an important caveat**. In expectation, dropout adds a quadratic penalty, so it behaves like a kind of ridge regularisation. However, the penalty is generally **data-dependent**, so it is not exactly the same as the isotropic $\|\mathbf{w}\|^2$ penalty we derived above.
+
+To see this clearly, let's work through the derivation in the setting of **inverted dropout**.
+
+### Setup
+
+Let
+
+$$X \in \mathbb{R}^{N \times d}, \quad \mathbf{y} \in \mathbb{R}^{N}, \quad \mathbf{w} \in \mathbb{R}^{d} \tag{22}$$
+
+and define a random diagonal dropout matrix
+
+$$D = \operatorname{diag}(\delta_1, \dots, \delta_d), \qquad \delta_j = \frac{z_j}{1-p}, \qquad z_j \sim \operatorname{Bernoulli}(1-p) \tag{23}$$
+
+independently for each feature $j$.
+
+This is the standard inverted-dropout convention: with probability $p$, a feature is dropped to zero; with probability $1-p$, it is kept and rescaled by $1/(1-p)$.
+
+The dropped-out predictor is
+
+$$\hat{\mathbf{y}} = XD\mathbf{w} \tag{24}$$
+
+and the loss for one realization of the dropout mask is
+
+$$L_D(\mathbf{w}) = \|\mathbf{y} - XD\mathbf{w}\|^2 \tag{25}$$
+
+What we really optimize in expectation is
+
+$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbb{E}_D\left[\|\mathbf{y} - XD\mathbf{w}\|^2\right] \tag{26}$$
+
+### Expand the Expected Loss
+
+Expanding the square gives
+
+$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbf{y}^\top \mathbf{y} - 2\mathbf{y}^\top X \, \mathbb{E}[D] \, \mathbf{w} + \mathbf{w}^\top \mathbb{E}[DX^\top XD] \mathbf{w} \tag{27}$$
+
+So the problem reduces to computing two quantities:
+
+- $\mathbb{E}[D]$
+- $\mathbb{E}[DX^\top XD]$
+
+### First Key Identity: $\mathbb{E}[D] = I$
+
+Since $\delta_j = z_j/(1-p)$ and $\mathbb{E}[z_j] = 1-p$, we have
+
+$$\mathbb{E}[\delta_j] = 1 \qquad \Longrightarrow \qquad \mathbb{E}[D] = I \tag{28}$$
+
+This is exactly why inverted dropout is convenient: the mean prediction is unchanged.
+
+### Second Key Identity: $\mathbb{E}[DX^\top XD]$
+
+Let
+
+$$G := X^\top X \tag{29}$$
+
+Then we need to compute $\mathbb{E}[DGD]$. Its $(i,j)$-entry is
+
+$$\left(DGD\right)_{ij} = \delta_i \delta_j G_{ij} \tag{30}$$
+
+Now consider two cases:
+
+- If $i \neq j$, independence gives $\mathbb{E}[\delta_i \delta_j] = \mathbb{E}[\delta_i]\mathbb{E}[\delta_j] = 1$.
+- If $i = j$, then $\delta_i^2 = z_i/(1-p)^2$, so $\mathbb{E}[\delta_i^2] = 1/(1-p)$.
+
+Therefore the off-diagonal entries are unchanged, while the diagonal entries are inflated by a factor $1/(1-p)$. Equivalently,
+
+$$\mathbb{E}[DGD] = G + \left(\frac{1}{1-p} - 1\right)\operatorname{diag}(G) = G + \frac{p}{1-p}\operatorname{diag}(G) \tag{31}$$
+
+Substituting back $G = X^\top X$, we get the key identity
+
+$$\mathbb{E}[DX^\top XD] = X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X) \tag{32}$$
+
+### The Effective Objective
+
+Plugging Eqs. (28) and (32) into Eq. (27), we obtain
+
+$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbf{y}^\top \mathbf{y} - 2\mathbf{y}^\top X\mathbf{w} + \mathbf{w}^\top\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w} \tag{33}$$
+
+Using
+
+$$\|\mathbf{y} - X\mathbf{w}\|^2 = \mathbf{y}^\top \mathbf{y} - 2\mathbf{y}^\top X\mathbf{w} + \mathbf{w}^\top X^\top X \mathbf{w} \tag{34}$$
+
+this simplifies to
+
+$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\mathbf{w}^\top \operatorname{diag}(X^\top X)\mathbf{w} \tag{35}$$
+
+This is the main result. Dropout gives the usual least-squares loss plus a **weighted quadratic penalty**.
+
+### Solve for the Exact Minimizer
+
+Differentiate Eq. (35):
+
+$$\nabla L_{\mathrm{eff}}(\mathbf{w}) = 2\left[\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w} - X^\top \mathbf{y}\right] \tag{36}$$
+
+Setting the gradient to zero gives
+
+$$\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w}^* = X^\top \mathbf{y} \tag{37}$$
+
+and therefore
+
+$$\mathbf{w}^*_{\mathrm{drop}} = \left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)^{-1}X^\top \mathbf{y} \tag{38}$$
+
+This is the exact minimizer of the expected dropout objective.
+
+### Relation to L2 Regularisation
+
+Compare Eq. (35) with ordinary ridge regression:
+
+$$L_{\mathrm{ridge}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \lambda \|\mathbf{w}\|^2 \tag{39}$$
+
+The difference is subtle but important:
+
+- ridge uses the isotropic penalty $\lambda \|\mathbf{w}\|^2 = \lambda \mathbf{w}^\top I \mathbf{w}$
+- dropout uses the data-dependent penalty $\frac{p}{1-p}\mathbf{w}^\top \operatorname{diag}(X^\top X)\mathbf{w}$
+
+So dropout is not exactly the same as standard L2 regularisation in general. Instead, it is a **feature-wise weighted ridge penalty**, where the amount of shrinkage depends on the scale of each feature column.
+
+If the columns of $X$ are normalized so that
+
+$$\operatorname{diag}(X^\top X) = cI \tag{40}$$
+
+for some constant $c$, then Eq. (35) becomes
+
+$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{pc}{1-p}\|\mathbf{w}\|^2 \tag{41}$$
+
+which is exactly ridge regression.
+
+So the clean summary is:
+
+- a Gaussian prior leads exactly to ordinary L2 regularisation
+- inverted dropout leads, in expectation, to a weighted version of L2 regularisation
+- after feature normalization, the two become much closer
+
 ## Reference
