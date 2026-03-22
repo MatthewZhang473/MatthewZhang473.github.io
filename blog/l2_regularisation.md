@@ -3,7 +3,7 @@
 <!-- 
 
 **Structure:**
-- [ ] What is L2-regularisation actually doing: Linear model: Y = X@beta + epsilon
+- [x] What is L2-regularisation actually doing: Linear model: Y = X@beta + epsilon
    1. you might be familiar with linear model, MSE loss, ... let's see why this is the case
    2. assumption: each datapoint we observed have gaussian noise, we want to maximise the likelihood: max P(data | model)
    3. leads to minimizing MSE -> gradient -> solution
@@ -107,9 +107,7 @@ $$\sum_{i=1}^N \left(y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w}\right)^2 = \|\math
 
 ### Solve it!
 
-Now that we know MLE leads to the MSE objective, let's actually solve it.
-
-Recall the loss
+Now that we know MLE leads to the MSE objective, let's actually solve it. Recall the loss
 
 $$
 L(\mathbf{w}) = \frac{1}{2}\|\mathbf{y} - X\mathbf{w}\|^2
@@ -142,16 +140,70 @@ $$
 
 which is exactly the OLS solution from Eq. (4).
 
->  **Matrix Calculus Reminder**: If matrix calculus feels a bit scary, a good sanity check is to follow the shapes: the gradient with respect to $\mathbf{w}$ must have the same shape as $\mathbf{w}$ itself, namely $(m+1)\times 1$. That is one quick way to catch mistakes.
+> **Matrix Calculus Reminder**: If matrix calculus feels a bit intimidating, a very practical sanity check is to track the shapes. Here, $\frac{\partial L}{\partial \mathbf{w}}$ must have the same shape as $\mathbf{w}$, namely $(m+1, 1)$.
+>
+> Looking only at the shape change,
+> $$
+> X^\top(\mathbf{y} - X\mathbf{w})
+> : (m+1, N)(N, 1) \to (m+1, 1)
+> $$
+>
+> so the gradient has exactly the shape we expect. This is a simple way to catch mistakes when doing matrix derivatives.
 
 
 
 ## One Step Further: From Likelihood to Posterior
 
+So far, we have been doing **maximum likelihood estimation**:
 
+$$P(\text{data} \mid \text{model}) \tag{14}$$
+
+
+But this still only asks: *which parameter makes the observed data most likely?* What we really want is slightly different:
+
+$$P(\text{model} \mid \text{data}) \tag{15}$$
+
+This is the **posterior**: the probability of the model parameters after we have seen the data.
+
+Bayes' rule tells us
+
+$$P(\text{model} \mid \text{data}) = \frac{P(\text{data} \mid \text{model}) P(\text{model})}{P(\text{data})} \tag{16}$$
+
+and since $P(\text{data})$ does not depend on the model, maximizing the posterior is equivalent to maximizing
+
+$$P(\text{model} \mid \text{data}) \propto P(\text{data} \mid \text{model}) P(\text{model}) \tag{17}$$
+
+So the posterior combines two pieces:
+
+- the **likelihood** $P(\text{data} \mid \text{model})$, which tells us how well the model explains the observed data
+- the **prior** $P(\text{model})$, which encodes what kinds of models we consider plausible before seeing any data
+
+For linear regression, the "model" is just the parameter vector $\mathbf{w}$. A very natural choice is then a zero-mean Gaussian prior on $\mathbf{w}$:
+
+$$P(\mathbf{w}) = \mathcal{N}(\mathbf{0}, \tau^2 I) \propto \exp\left(-\frac{\|\mathbf{w}\|^2}{2\tau^2}\right) \tag{18}$$
+
+This says that, before seeing the data, we believe weights near zero are more likely than very large weights. That is exactly the kind of preference we want if we would like to discourage overly complicated fits.
+
+Now substitute the Gaussian likelihood and Gaussian prior into Bayes' rule. The log-posterior is then
+
+$$\log P(\mathbf{w} \mid \mathbf{y}, X) = -\frac{1}{2\sigma^2}\|\mathbf{y} - X\mathbf{w}\|^2 - \frac{1}{2\tau^2}\|\mathbf{w}\|^2 + \text{const} \tag{19}$$
+
+Using the same simplification as in Eq. (8), where we drop additive constants and positive scaling factors that do not change the optimizer, and defining $\lambda := \frac{\sigma^2}{\tau^2}$, we immediately get the familiar L2-regularised objective:
+
+$$\mathbf{w}^*_{\mathrm{MAP}} = \arg\min_{\mathbf{w}} \left[ \frac{1}{2}\|\mathbf{y} - X\mathbf{w}\|^2 + \frac{\lambda}{2}\|\mathbf{w}\|^2 \right] \tag{21}$$
+
+And that is the key connection: **L2 regularisation is exactly what you get when you do MAP estimation with a zero-mean Gaussian prior on the weights.**
 
 
 ## How Does L2 Regularisation Improves Stability?
+
+Linear algebra PoV:
+- [ ] why $(X^TX)^{-1}$ is theoretically solvable but unstable
+- [ ] how does introducing l2 reg make it stable
+
+- [ ] Coding example:
+
+
 
 ## What About Dropout?
 
