@@ -60,7 +60,7 @@ $$
 
 This turns our regression problem into a Maximum Likelihood Estimation (MLE) problem: can we find the parameter $\mathbf{w}^*$ that maximizes this probability?
 
-### From MSE to MSE
+### From MLE to MSE
 
 Taking logs, dropping the additive constant and positive factor $1/(2\sigma^2)$ gives
 
