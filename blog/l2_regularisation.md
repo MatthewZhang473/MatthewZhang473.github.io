@@ -195,15 +195,81 @@ And that is the key connection: **L2 regularisation is exactly what you get when
 
 ## How Does L2 Regularisation Improves Numerical Stability?
 
-Linear algebra PoV:
-- [ ] why $(X^TX)^{-1}$ is theoretically solvable but unstable
-- [ ] how does introducing l2 reg make it stable
+So far, we have shown that L2 regularisation comes from a Gaussian prior. But why does it improve numerical stability?
 
-- [ ] Coding example:
+The answer is easiest to see by looking at the matrix we need to invert.
+
+Recall that the OLS solution is
+
+$$\mathbf{w}^* = (X^\top X)^{-1}X^\top \mathbf{y} \tag{22}$$
+
+while the L2-regularised solution is
+
+$$\mathbf{w}^*_{\mathrm{L2}} = (X^\top X + \lambda I)^{-1}X^\top \mathbf{y} \tag{23}$$
+
+So the question reduces to: how stable is the inverse of $X^\top X$, and what changes when we replace it by $X^\top X + \lambda I$?
+
+### Step 1: Condition Number Measures Stability
+
+Consider solving a linear system
+
+$$A\mathbf{x} = \mathbf{b} \tag{24}$$
+
+and suppose the right-hand side is perturbed to $\mathbf{b} + \delta \mathbf{b}$. Then the solution changes from $\mathbf{x}$ to $\mathbf{x} + \delta \mathbf{x}$, where
+
+$$(\mathbf{x} + \delta \mathbf{x}) = A^{-1}(\mathbf{b} + \delta \mathbf{b}) \qquad \Longrightarrow \qquad \delta \mathbf{x} = A^{-1}\delta \mathbf{b} \tag{25}$$
+
+Taking norms gives the standard perturbation bound
+
+$$\frac{\|\delta \mathbf{x}\|_2}{\|\mathbf{x}\|_2} \le \kappa_2(A)\frac{\|\delta \mathbf{b}\|_2}{\|\mathbf{b}\|_2}, \qquad \kappa_2(A) := \|A\|_2\|A^{-1}\|_2  = \frac{\|\mu\_{\max}\|}{\|\mu\_{\min}\|} \tag{26}$$
+
+
+In other words, even though $\mu\_{\text{min}} > 0$ is suffcient for the the matrix $A$ to be invertible, the conditional number  $\frac{\|\mu\_{\max}\|}{\|\mu\_{\min}\|} $ determines how easy can we solve it.
+
+
+
+### Step 2: Eigenvalues of $X^\top X$
+
+For any vector $\mathbf{v} \in \mathbb{R}^{m+1}$,
+
+$$\mathbf{v}^\top X^\top X \mathbf{v} = \|X\mathbf{v}\|^2 \ge 0 \tag{30}$$
+
+so $X^\top X$ is symmetric positive semi-definite. Therefore all its eigenvalues satisfy
+
+$$\mu_1, \dots, \mu_{m+1} \ge 0 \tag{31}$$
+
+However, this is not suffcient for $X^{\top} X$ to be invertible, and even so, a very small $\mu\_{\text{min}}$ can make it highly unstable.
+
+### Step 3: L2 Regularisation Shifts the Spectrum
+
+Consider any eigenvector $v^{*}$ of $X^{\top}X$ with eigenvalue 
+
+$\mu^{*}$, we have:
+
+$$(X^\top X + \lambda I)v  = X^\top Xv + \lambda I v = (\mu^* + \lambda)v$$ 
+
+
+i.e. $X^\top X + \lambda I$ shares the same eigenvectors, but with the eigenvalues all increase $\lambda$.
+
+
+For any positive $\lambda$, we now not only guarantee invertible, and also get a nicer conditoinal number:
+
+
+$$\kappa_2(X^\top X + \lambda I) = \frac{\mu_{\max} + \lambda}{\mu_{\min} + \lambda} \tag{39}$$
+
+Splendid!
+
+
+
+### Coding Example
+
+Check out this 1D example to demonstrate how adding L2 regularisation improves the stability.
 
 
 
 ## What About Dropout?
+
+Another popular regularisation technique you might have heard of is *dropout*. Dropout randomly deactivates neurons during training, aiming to preventing them from co-adapting and reducing overfitting. 
 
 At this point, it is natural to ask: *is dropout doing something similar to L2 regularisation?*
 
@@ -211,17 +277,15 @@ The answer is **yes**, and let's work through the derivation with a simple examp
 
 ### Setup
 
-Let
+Let's begin by clarifying our setup:
 
-$$X \in \mathbb{R}^{N \times (m+1)}, \quad \mathbf{y} \in \mathbb{R}^{N}, \quad \mathbf{w} \in \mathbb{R}^{m+1} \tag{22}$$
-
-just as before.
+Let $X \in \mathbb{R}^{N \times (m+1)}, \quad \mathbf{y} \in \mathbb{R}^{N}, \quad \mathbf{w} \in \mathbb{R}^{m+1} $ just as before.
 
 To model dropout, we place a random mask directly on the entries of the data matrix $X$. On each forward pass, each entry is either kept or dropped independently, and the surviving entries are rescaled so that the expected input stays the same.
 
 Let $M \in \mathbb{R}^{N \times (m+1)}$ be the random mask, with entries
 
-$$M_{ij} = \frac{z_{ij}}{1-p}, \qquad z_{ij} \sim \operatorname{Bernoulli}(1-p) \tag{23}$$
+$$M_{ij} = \frac{z_{ij}}{1-p}, \qquad z_{ij} \sim \operatorname{Bernoulli}(1-p) \tag{27}$$
 
 independently for each data point $i = 1, \dots, N$ and feature $j = 0, \dots, m$.
 
@@ -229,98 +293,98 @@ So with probability $p$, an entry is dropped to zero; with probability $1-p$, it
 
 The dropped-out predictor is
 
-$$\hat{\mathbf{y}} = (X \odot M)\mathbf{w} \tag{24}$$
+$$\hat{\mathbf{y}} = (X \odot M)\mathbf{w} \tag{28}$$
 
 and the loss for one realization of the dropout mask is
 
-$$L_M(\mathbf{w}) = \|\mathbf{y} - (X \odot M)\mathbf{w}\|^2 \tag{25}$$
+$$L_M(\mathbf{w}) = \|\mathbf{y} - (X \odot M)\mathbf{w}\|^2 \tag{29}$$
 
 What we really optimize in expectation is
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbb{E}_M\left[\|\mathbf{y} - (X \odot M)\mathbf{w}\|^2\right] \tag{26}$$
+$$L_{\mathrm{eff}}(\mathbf{w}) = \mathbb{E}_M\left[\|\mathbf{y} - (X \odot M)\mathbf{w}\|^2\right] \tag{30}$$
 
 ### Expand the Expected Loss
 
 Because the loss is a sum over data points, it is convenient to look at one sample at a time. For the $i$-th data point,
 
-$$\hat{y}^{(i)} = \sum_{j=0}^{m} X_{ij} M_{ij} w_j \tag{27}$$
+$$\hat{y}^{(i)} = \sum_{j=0}^{m} X_{ij} M_{ij} w_j \tag{31}$$
 
 Since $\mathbb{E}[M_{ij}] = 1$, the dropped-out prediction is unbiased:
 
-$$\mathbb{E}[\hat{y}^{(i)}] = \sum_{j=0}^{m} X_{ij} w_j = \mathbf{x}^{(i)\top}\mathbf{w} \tag{28}$$
+$$\mathbb{E}[\hat{y}^{(i)}] = \sum_{j=0}^{m} X_{ij} w_j = \mathbf{x}^{(i)\top}\mathbf{w} \tag{32}$$
 
 Now use the identity
 
-$$\mathbb{E}\left[(y^{(i)} - \hat{y}^{(i)})^2\right] = \left(y^{(i)} - \mathbb{E}[\hat{y}^{(i)}]\right)^2 + \operatorname{Var}(\hat{y}^{(i)}) \tag{29}$$
+$$\mathbb{E}\left[(y^{(i)} - \hat{y}^{(i)})^2\right] = \left(y^{(i)} - \mathbb{E}[\hat{y}^{(i)}]\right)^2 + \operatorname{Var}(\hat{y}^{(i)}) \tag{33}$$
 
 So the problem reduces to computing the variance of $\hat{y}^{(i)}$.
 
 Because the masks are independent across features,
 
-$$\operatorname{Var}(\hat{y}^{(i)}) = \sum_{j=0}^{m} X_{ij}^2 w_j^2 \operatorname{Var}(M_{ij}) \tag{30}$$
+$$\operatorname{Var}(\hat{y}^{(i)}) = \sum_{j=0}^{m} X_{ij}^2 w_j^2 \operatorname{Var}(M_{ij}) \tag{34}$$
 
 and since
 
-$$\operatorname{Var}(M_{ij}) = \frac{1}{1-p} - 1 = \frac{p}{1-p} \tag{31}$$
+$$\operatorname{Var}(M_{ij}) = \frac{1}{1-p} - 1 = \frac{p}{1-p} \tag{35}$$
 
 we get
 
-$$\operatorname{Var}(\hat{y}^{(i)}) = \frac{p}{1-p}\sum_{j=0}^{m} X_{ij}^2 w_j^2 \tag{32}$$
+$$\operatorname{Var}(\hat{y}^{(i)}) = \frac{p}{1-p}\sum_{j=0}^{m} X_{ij}^2 w_j^2 \tag{36}$$
 
 ### The Effective Objective
 
-Plugging Eqs. (28) and (32) into Eq. (29), we obtain
+Plugging Eqs. (32) and (36) into Eq. (33), we obtain
 
-$$\mathbb{E}\left[(y^{(i)} - \hat{y}^{(i)})^2\right] = \left(y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w}\right)^2 + \frac{p}{1-p}\sum_{j=0}^{m} X_{ij}^2 w_j^2 \tag{33}$$
+$$\mathbb{E}\left[(y^{(i)} - \hat{y}^{(i)})^2\right] = \left(y^{(i)} - \mathbf{x}^{(i)\top}\mathbf{w}\right)^2 + \frac{p}{1-p}\sum_{j=0}^{m} X_{ij}^2 w_j^2 \tag{37}$$
 
 Now sum over all data points $i = 1, \dots, N$:
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\sum_{j=0}^{m}\left(\sum_{i=1}^{N} X_{ij}^2\right) w_j^2 \tag{34}$$
+$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\sum_{j=0}^{m}\left(\sum_{i=1}^{N} X_{ij}^2\right) w_j^2 \tag{38}$$
 
 But $\sum_{i=1}^{N} X_{ij}^2$ is exactly the $j$-th diagonal entry of $X^\top X$, so this simplifies to
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\mathbf{w}^\top \operatorname{diag}(X^\top X)\mathbf{w} \tag{35}$$
+$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{p}{1-p}\mathbf{w}^\top \operatorname{diag}(X^\top X)\mathbf{w} \tag{39}$$
 
 This is the main result. Dropout gives the usual least-squares loss plus a **weighted quadratic penalty**.
 
 ### Solve for the Exact Minimizer
 
-Differentiate Eq. (35):
+Differentiate Eq. (39):
 
-$$\nabla L_{\mathrm{eff}}(\mathbf{w}) = 2\left[\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w} - X^\top \mathbf{y}\right] \tag{36}$$
+$$\nabla L_{\mathrm{eff}}(\mathbf{w}) = 2\left[\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w} - X^\top \mathbf{y}\right] \tag{40}$$
 
 Setting the gradient to zero gives
 
-$$\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w}^* = X^\top \mathbf{y} \tag{37}$$
+$$\left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)\mathbf{w}^* = X^\top \mathbf{y} \tag{41}$$
 
 and therefore
 
-$$\mathbf{w}^*_{\mathrm{drop}} = \left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)^{-1}X^\top \mathbf{y} \tag{38}$$
+$$\mathbf{w}^*_{\mathrm{drop}} = \left(X^\top X + \frac{p}{1-p}\operatorname{diag}(X^\top X)\right)^{-1}X^\top \mathbf{y} \tag{42}$$
 
 This is the exact minimizer of the expected dropout objective.
 
 ### Relation to L2 Regularisation
 
-Compare Eq. (35) with ordinary ridge regression:
+Compare Eq. (39) with ordinary L2 regularisation:
 
-$$L_{\mathrm{ridge}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \lambda \|\mathbf{w}\|^2 \tag{39}$$
+$$L_{\mathrm{L2}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \lambda \|\mathbf{w}\|^2 \tag{43}$$
 
 The difference is subtle but important:
 
-- ridge uses the isotropic penalty $\lambda \|\mathbf{w}\|^2 = \lambda \mathbf{w}^\top I \mathbf{w}$
+- L2 regularisation uses the isotropic penalty $\lambda \|\mathbf{w}\|^2 = \lambda \mathbf{w}^\top I \mathbf{w}$
 - dropout uses the data-dependent penalty $\frac{p}{1-p}\mathbf{w}^\top \operatorname{diag}(X^\top X)\mathbf{w}$
 
-So dropout is not exactly the same as standard L2 regularisation in general. Instead, it is a **feature-wise weighted ridge penalty**, where the amount of shrinkage depends on the scale of each feature column.
+So dropout is not exactly the same as standard L2 regularisation in general. Instead, it is a **feature-wise weighted L2 penalty**, where the amount of shrinkage depends on the scale of each feature column.
 
 If the columns of $X$ are normalized so that
 
-$$\operatorname{diag}(X^\top X) = cI \tag{40}$$
+$$\operatorname{diag}(X^\top X) = cI \tag{44}$$
 
-for some constant $c$, then Eq. (35) becomes
+for some constant $c$, then Eq. (39) becomes
 
-$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{pc}{1-p}\|\mathbf{w}\|^2 \tag{41}$$
+$$L_{\mathrm{eff}}(\mathbf{w}) = \|\mathbf{y} - X\mathbf{w}\|^2 + \frac{pc}{1-p}\|\mathbf{w}\|^2 \tag{45}$$
 
-which is exactly ridge regression.
+which is exactly ordinary L2 regularisation.
 
 So the clean summary is:
 
